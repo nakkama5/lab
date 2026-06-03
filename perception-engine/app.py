@@ -360,14 +360,24 @@ def tab_run():
 
 
 def _build_gamma_prompt() -> str:
-    """Assemble a mega-prompt for Gamma generation via Claude Code chat."""
+    """Assemble a full Gamma generation prompt with brand tokens and card structure."""
+    from src.config_store import load as config_load
+
     deck_spec = st.session_state.deck_spec or {}
     dossier = st.session_state.dossier or ""
 
+    try:
+        brand_tokens = config_load("brand_tokens")
+    except Exception:
+        brand_tokens = {}
+
     product = deck_spec.get("product", "")
     taglines = deck_spec.get("taglines") or {}
+    micro = deck_spec.get("micro", "")
     elevator = deck_spec.get("elevator", "")
     metrics = deck_spec.get("metrics") or []
+    legacy = deck_spec.get("legacy") or []
+    evolution = deck_spec.get("evolution") or []
     metaphor = deck_spec.get("metaphor") or {}
     swot = deck_spec.get("swot") or {}
     pillars = deck_spec.get("pillars") or []
@@ -376,57 +386,213 @@ def _build_gamma_prompt() -> str:
     roadmap = deck_spec.get("roadmap") or []
     grapevine = deck_spec.get("grapevine") or []
 
-    lines = [
-        f"# Gamma Deck Generation Prompt — {product}",
-        "",
-        "Please generate a Gamma presentation using the brand intelligence below.",
-        "Use the `mcp__e2a76a26-c84d-46b0-a627-996cea47643c__generate` tool.",
-        "",
-        "## Product",
-        product,
-        "",
-        "## Taglines",
-        f"- Outcome: {taglines.get('outcome','')}",
-        f"- Visionary: {taglines.get('visionary','')}",
-        f"- Punchy: {taglines.get('punchy','')}",
-        "",
-        "## Elevator Pitch",
-        elevator,
-        "",
-        "## Key Metrics",
-    ]
-    for m in metrics:
-        lines.append(f"- {m.get('num','')} — {m.get('label','')}")
-    lines += [
-        "",
-        "## Core Metaphor",
-        metaphor.get("statement", ""),
-        metaphor.get("rationale", ""),
-        "",
-        "## SWOT",
-        "**Strengths:** " + ", ".join(swot.get("strengths", [])),
-        "**Weaknesses:** " + ", ".join(swot.get("weaknesses", [])),
-        "**Opportunities:** " + ", ".join(swot.get("opportunities", [])),
-        "**Threats:** " + ", ".join(swot.get("threats", [])),
-        "",
-        "## Tone Pillars",
-    ]
-    for p in pillars:
-        lines.append(f"- **{p.get('name','')}**: say «{p.get('do_say','')}», not «{p.get('dont_say','')}»")
-    lines += ["", "## Vocabulary Swap"]
-    for v in vocab:
-        lines.append(f"- {v.get('from', v.get('from_', ''))} → {v.get('to', '')}")
-    lines += ["", "## Manifesto", manifesto, "", "## Roadmap"]
-    for r in roadmap:
-        lines.append(f"**{r.get('phase','')} – {r.get('name','')} ({r.get('when','')})**")
-        for pt in r.get("points", []):
-            lines.append(f"  - {pt}")
-    lines += ["", "## Grapevine (Social Proof / Quotes)"]
-    for g in grapevine:
-        lines.append(f"- **{g.get('title','')}**: {g.get('desc','')}")
-    lines += ["", "## Full Brand Dossier (excerpt)", dossier[:1500]]
+    # ── Brand identity block ──────────────────────────────────────────────────
+    palette = brand_tokens.get("palette") or {}
+    typography = brand_tokens.get("type") or {}
+    brand_rules = brand_tokens.get("rules", "")
+    motif = brand_tokens.get("motif", "")
 
-    return "\n".join(lines)
+    color_lines = []
+    for role, val in palette.items():
+        if isinstance(val, dict):
+            hex_val = val.get("hex", "")
+            role_desc = val.get("role", role)
+            why = val.get("why", "")
+            color_lines.append(f"  - #{hex_val} ({role_desc}){': ' + why if why else ''}")
+        else:
+            color_lines.append(f"  - {role}: {val}")
+
+    display_font = typography.get("display", "Georgia") if isinstance(typography, dict) else "Georgia"
+    body_font = typography.get("body", "Calibri") if isinstance(typography, dict) else "Calibri"
+
+    # Build visual style from motif + brand rules
+    visual_style = motif or "premium editorial"
+    if brand_rules:
+        visual_style += f". {brand_rules[:300]}"
+
+    # ── Vocabulary swap dict for inline use ───────────────────────────────────
+    vocab_map = {}
+    for v in vocab:
+        k = v.get("from", v.get("from_", ""))
+        t = v.get("to", "")
+        if k and t:
+            vocab_map[k] = t
+
+    def apply_vocab(text: str) -> str:
+        for k, v in vocab_map.items():
+            text = text.replace(k, v)
+        return text
+
+    # ── SWOT reframed (not raw quadrant) ─────────────────────────────────────
+    strengths = swot.get("strengths") or []
+    weaknesses = swot.get("weaknesses") or []
+    opportunities = swot.get("opportunities") or []
+    threats = swot.get("threats") or []
+    gaps = weaknesses + threats  # merge into "strategic gaps"
+
+    # ── Card-by-card structure ────────────────────────────────────────────────
+    cards = []
+
+    # Card 1 — Cover
+    cards.append(f"""---CARD: Cover---
+Title: {product}
+Subtitle: {taglines.get('punchy', taglines.get('visionary', ''))}
+Visual: full-bleed hero image, style: {visual_style}""")
+
+    # Card 2 — The Hook (outcome tagline)
+    if taglines.get("outcome"):
+        cards.append(f"""---CARD: The Hook---
+Headline: {apply_vocab(taglines['outcome'])}
+Body: {apply_vocab(micro or elevator[:200])}
+Visual: abstract mood image evoking transformation, style: {visual_style}""")
+
+    # Card 3 — The Problem (legacy)
+    if legacy:
+        legacy_text = "\n".join(f"- {apply_vocab(l)}" for l in legacy[:4])
+        cards.append(f"""---CARD: The Old Playbook (What Broke)---
+Headline: The world changed. The playbook didn't.
+Body:
+{legacy_text}
+Visual: muted, desaturated image suggesting stagnation or complexity""")
+
+    # Card 4 — The Shift (evolution)
+    if evolution:
+        evo_text = "\n".join(f"- {apply_vocab(e)}" for e in evolution[:4])
+        cards.append(f"""---CARD: The New Operating System---
+Headline: {apply_vocab(taglines.get('visionary', 'The shift has already happened.'))}
+Body:
+{evo_text}
+Visual: bold, bright, forward-motion image, style: {visual_style}""")
+
+    # Card 5 — Elevator pitch
+    if elevator:
+        cards.append(f"""---CARD: What It Is---
+Headline: {apply_vocab(product)} in one paragraph
+Body: {apply_vocab(elevator)}
+Visual: clean product/platform illustration or icon grid""")
+
+    # Card 6 — Core metaphor
+    if metaphor.get("statement"):
+        cards.append(f"""---CARD: The Core Metaphor---
+Headline: {apply_vocab(metaphor['statement'])}
+Body: {apply_vocab(metaphor.get('rationale', ''))}
+Visual: image literalising the metaphor, style: {visual_style}""")
+
+    # Card 7 — Metrics
+    if metrics:
+        metric_lines = "\n".join(f"- **{m.get('num','')}** — {apply_vocab(m.get('label',''))}" for m in metrics)
+        cards.append(f"""---CARD: The Numbers That Matter---
+Headline: Proof, not promise.
+Body:
+{metric_lines}
+Visual: data-driven graphic or large-number typographic layout""")
+
+    # Card 8 — Proprietary moat (strengths reframed)
+    if strengths:
+        moat_text = "\n".join(f"- {apply_vocab(s)}" for s in strengths[:4])
+        cards.append(f"""---CARD: The Proprietary Moat---
+Headline: What no one else can replicate.
+Body:
+{moat_text}
+Visual: fortress or precision-craft image, style: {visual_style}""")
+
+    # Card 9 — Strategic gaps (weaknesses+threats reframed as investment thesis)
+    if gaps:
+        gaps_text = "\n".join(f"- {apply_vocab(g)}" for g in gaps[:4])
+        cards.append(f"""---CARD: Strategic Gaps — Why They Make the Case---
+Headline: The gaps that justify the investment.
+Body: These are not liabilities. They are the whitespace this roadmap is built to close.
+{gaps_text}
+Visual: tension/contrast image — light breaking through""")
+
+    # Card 10 — Opportunity (from SWOT)
+    if opportunities:
+        opp_text = "\n".join(f"- {apply_vocab(o)}" for o in opportunities[:4])
+        cards.append(f"""---CARD: The Opportunity Window---
+Headline: The market is ready. The timing is now.
+Body:
+{opp_text}
+Visual: open horizon or expansive landscape, style: {visual_style}""")
+
+    # Card 11 — Social proof / grapevine
+    if grapevine:
+        proof_text = "\n".join(f'> "{apply_vocab(g["desc"])}" — {g["title"]}' for g in grapevine[:3])
+        cards.append(f"""---CARD: What the Market Is Already Saying---
+Headline: The signal is there.
+Body:
+{proof_text}
+Visual: subtle editorial collage or quote typography""")
+
+    # Cards 12–N — Roadmap (one card per phase)
+    for r in roadmap:
+        pts = "\n".join(f"- {apply_vocab(pt)}" for pt in r.get("points", [])[:4])
+        cards.append(f"""---CARD: {r.get('phase','')} — {apply_vocab(r.get('name',''))} ({r.get('when','')})---
+Body:
+{pts}
+Visual: timeline or progress graphic""")
+
+    # Card — Manifesto
+    if manifesto:
+        cards.append(f"""---CARD: Manifesto---
+Headline: We believe.
+Body: {apply_vocab(manifesto[:600])}
+Visual: full-bleed typographic statement, style: {visual_style}""")
+
+    # Card — Closing
+    cards.append(f"""---CARD: Closing---
+Headline: {apply_vocab(taglines.get('visionary', product))}
+Subhead: {apply_vocab(taglines.get('punchy', ''))}
+CTA: Let's build it together.
+Visual: full-bleed closing image, style: {visual_style}""")
+
+    # ── Assemble full prompt ──────────────────────────────────────────────────
+    vocab_swap_lines = "\n".join(f"  {k} → {v}" for k, v in vocab_map.items())
+    pillar_lines = "\n".join(
+        f"  - {p.get('name','')}: SAY «{p.get('do_say','')}» / NEVER SAY «{p.get('dont_say','')}»"
+        for p in pillars
+    )
+    color_block = "\n".join(color_lines) if color_lines else "  (no palette defined)"
+    cards_block = "\n\n".join(cards)
+
+    prompt = f"""Generate a Gamma presentation for: {product}
+
+Use the `generate` tool (mcp__e2a76a26-c84d-46b0-a627-996cea47643c__generate).
+
+═══════════════════════════════════════
+BRAND IDENTITY — apply to every card
+═══════════════════════════════════════
+Primary font (display/titles): {display_font}
+Body font: {body_font}
+Color palette:
+{color_block}
+Visual motif / image style: {visual_style}
+
+VOCABULARY — always use these terms (never the legacy term):
+{vocab_swap_lines if vocab_swap_lines else "  (none defined)"}
+
+TONE PILLARS — follow strictly:
+{pillar_lines if pillar_lines else "  (none defined)"}
+
+═══════════════════════════════════════
+DECK STRUCTURE — one card per section
+Use explicit card breaks so Gamma renders each as a separate slide.
+═══════════════════════════════════════
+
+{cards_block}
+
+═══════════════════════════════════════
+GENERATION RULES
+═══════════════════════════════════════
+- Each ---CARD--- block = one Gamma card/slide. Do not merge cards.
+- Apply brand colors to backgrounds and accents throughout.
+- Use {display_font} for all headlines, {body_font} for body text.
+- Generate images using the custom style: {visual_style}
+- Do NOT use generic stock-photo presets — use the custom image style above.
+- Apply vocabulary swaps everywhere (including image prompts and alt text).
+- Keep tone pillars in mind for every word choice.
+- The SWOT is reframed (moat + strategic gaps + opportunity), not a raw 4-quadrant grid.
+"""
+    return prompt
 
 
 def _export_to_gamma():
