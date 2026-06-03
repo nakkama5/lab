@@ -8,7 +8,6 @@ from src.schemas import ResearchPlan
 
 
 def run_derive(signal_map: dict, model: str | None = None) -> dict:
-    """Run DERIVE stage. Returns research_plan dict."""
     if model is None:
         model = llm.MODEL_DERIVE
 
@@ -18,5 +17,5 @@ def run_derive(signal_map: dict, model: str | None = None) -> dict:
 
     raw = llm.call_json(system=system, user=user, model=model, max_tokens=4096)
 
-    validated = ResearchPlan(**raw)
+    validated = ResearchPlan.model_validate(raw)
     return validated.model_dump()

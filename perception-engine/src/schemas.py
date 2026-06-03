@@ -1,23 +1,25 @@
 """Pydantic v2 schemas for all pipeline artifacts."""
 from __future__ import annotations
-from typing import Literal, Optional
 from pydantic import BaseModel, Field
+
+_VALID_DIMENSIONS = {"market", "technology", "narrative", "regulatory", "adoption", "validation"}
 
 
 class Signal(BaseModel):
-    id: str
-    observation: str
+    model_config = {"extra": "ignore"}
+    id: str = ""
+    observation: str = ""
     tag: str = "INTERNAL"
 
 
 class Metric(BaseModel):
-    num: str
-    label: str
+    model_config = {"extra": "ignore"}
+    num: str = ""
+    label: str = ""
 
 
 class SignalMap(BaseModel):
     model_config = {"extra": "ignore"}
-
     product_name: str = ""
     sector: str = ""
     product_core: str = ""
@@ -27,39 +29,62 @@ class SignalMap(BaseModel):
     catalysts: list[str] = Field(default_factory=list)
     strategic_intent: str = ""
 
+    @classmethod
+    def model_validate(cls, obj, *, strict=None, from_attributes=None, context=None):
+        if isinstance(obj, dict):
+            for s, p in [("tension","tensions"),("catalyst","catalysts"),("signal","signals"),("metric","metrics")]:
+                if s in obj and p not in obj:
+                    obj = {**obj, p: obj.pop(s)}
+            for f in ("tensions", "catalysts"):
+                if isinstance(obj.get(f), str):
+                    obj = {**obj, f: [obj[f]] if obj[f] else []}
+        return super().model_validate(obj, strict=strict, from_attributes=from_attributes, context=context)
+
 
 class ResearchQuestion(BaseModel):
-    id: str
-    dimension: Literal["market", "technology", "narrative", "regulatory", "adoption", "validation"]
-    question: str
-    queries: list[str]
+    model_config = {"extra": "ignore"}
+    id: str = ""
+    dimension: str = "market"
+    question: str = ""
+    queries: list[str] = Field(default_factory=list)
+
+    @classmethod
+    def model_validate(cls, obj, *, strict=None, from_attributes=None, context=None):
+        if isinstance(obj, dict) and obj.get("dimension") not in _VALID_DIMENSIONS:
+            obj = {**obj, "dimension": "market"}
+        return super().model_validate(obj, strict=strict, from_attributes=from_attributes, context=context)
 
 
 class ResearchPlan(BaseModel):
-    questions: list[ResearchQuestion]
+    model_config = {"extra": "ignore"}
+    questions: list[ResearchQuestion] = Field(default_factory=list)
 
 
 class EvidenceCard(BaseModel):
-    id: str
-    dimension: str
-    claim: str
-    source_title: str
-    url: str
-    tag: Literal["SECTORAL", "TECH"]
-    question_id: str
+    model_config = {"extra": "ignore"}
+    id: str = ""
+    dimension: str = ""
+    claim: str = ""
+    source_title: str = ""
+    url: str = ""
+    tag: str = "SECTORAL"
+    question_id: str = ""
 
 
 class EvidenceCards(BaseModel):
-    cards: list[EvidenceCard]
+    model_config = {"extra": "ignore"}
+    cards: list[EvidenceCard] = Field(default_factory=list)
 
 
 class Taglines(BaseModel):
+    model_config = {"extra": "ignore"}
     outcome: str = ""
     visionary: str = ""
     punchy: str = ""
 
 
 class JargonRow(BaseModel):
+    model_config = {"extra": "ignore"}
     feature: str = ""
     capability: str = ""
     benefit: str = ""
@@ -67,6 +92,7 @@ class JargonRow(BaseModel):
 
 
 class SWOT(BaseModel):
+    model_config = {"extra": "ignore"}
     strengths: list[str] = Field(default_factory=list)
     weaknesses: list[str] = Field(default_factory=list)
     opportunities: list[str] = Field(default_factory=list)
@@ -74,24 +100,26 @@ class SWOT(BaseModel):
 
 
 class Metaphor(BaseModel):
+    model_config = {"extra": "ignore"}
     statement: str = ""
     rationale: str = ""
 
 
 class TonePillar(BaseModel):
+    model_config = {"extra": "ignore"}
     name: str = ""
     do_say: str = ""
     dont_say: str = ""
 
 
 class VocabItem(BaseModel):
+    model_config = {"populate_by_name": True, "extra": "ignore"}
     from_: str = Field(default="", alias="from")
     to: str = ""
 
-    model_config = {"populate_by_name": True}
-
 
 class RoadmapPhase(BaseModel):
+    model_config = {"extra": "ignore"}
     phase: str = ""
     name: str = ""
     when: str = ""
@@ -99,13 +127,15 @@ class RoadmapPhase(BaseModel):
 
 
 class GrapevineItem(BaseModel):
+    model_config = {"extra": "ignore"}
     title: str = ""
     desc: str = ""
 
 
 class DeckSpec(BaseModel):
-    product: str
-    taglines: Taglines
+    model_config = {"extra": "ignore"}
+    product: str = ""
+    taglines: Taglines = Field(default_factory=Taglines)
     micro: str = ""
     elevator: str = ""
     metrics: list[Metric] = Field(default_factory=list)
@@ -122,9 +152,10 @@ class DeckSpec(BaseModel):
 
 
 class PaletteColor(BaseModel):
-    hex: str
-    role: str
-    why: str
+    model_config = {"extra": "ignore"}
+    hex: str = "000000"
+    role: str = ""
+    why: str = ""
 
 
 class Typography(BaseModel):
@@ -133,7 +164,8 @@ class Typography(BaseModel):
 
 
 class BrandTokens(BaseModel):
-    palette: dict[str, PaletteColor]
-    type: Typography
-    rules: str
-    motif: str
+    model_config = {"extra": "ignore"}
+    palette: dict[str, PaletteColor] = Field(default_factory=dict)
+    type: Typography = Field(default_factory=Typography)
+    rules: str = ""
+    motif: str = ""
