@@ -34,6 +34,7 @@ def _init_state():
         "deck_spec": None,
         "proposed_tokens": None,
         "run_dir": None,
+        "gamma_prompt": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -336,6 +337,96 @@ def tab_run():
         if os.environ.get("GAMMA_API_KEY"):
             if st.button("Export to Gamma", key="btn_gamma"):
                 _export_to_gamma()
+
+        # Gamma mega-prompt (always available — no API key needed)
+        st.divider()
+        st.markdown("#### Generate in Gamma via Claude Code")
+        st.caption("No Gamma API key needed — paste this prompt into your Claude Code chat to generate the deck.")
+        if st.button("Generate Gamma prompt", key="btn_gamma_prompt"):
+            st.session_state["gamma_prompt"] = _build_gamma_prompt()
+        if st.session_state.get("gamma_prompt"):
+            st.text_area(
+                "Copy this prompt and paste it into Claude Code ↓",
+                value=st.session_state["gamma_prompt"],
+                height=300,
+                key="ta_gamma_prompt",
+            )
+            st.download_button(
+                "Download prompt as .txt",
+                data=st.session_state["gamma_prompt"],
+                file_name="gamma_prompt.txt",
+                mime="text/plain",
+            )
+
+
+def _build_gamma_prompt() -> str:
+    """Assemble a mega-prompt for Gamma generation via Claude Code chat."""
+    deck_spec = st.session_state.deck_spec or {}
+    dossier = st.session_state.dossier or ""
+
+    product = deck_spec.get("product", "")
+    taglines = deck_spec.get("taglines") or {}
+    elevator = deck_spec.get("elevator", "")
+    metrics = deck_spec.get("metrics") or []
+    metaphor = deck_spec.get("metaphor") or {}
+    swot = deck_spec.get("swot") or {}
+    pillars = deck_spec.get("pillars") or []
+    vocab = deck_spec.get("vocab") or []
+    manifesto = deck_spec.get("manifesto", "")
+    roadmap = deck_spec.get("roadmap") or []
+    grapevine = deck_spec.get("grapevine") or []
+
+    lines = [
+        f"# Gamma Deck Generation Prompt — {product}",
+        "",
+        "Please generate a Gamma presentation using the brand intelligence below.",
+        "Use the `mcp__e2a76a26-c84d-46b0-a627-996cea47643c__generate` tool.",
+        "",
+        "## Product",
+        product,
+        "",
+        "## Taglines",
+        f"- Outcome: {taglines.get('outcome','')}",
+        f"- Visionary: {taglines.get('visionary','')}",
+        f"- Punchy: {taglines.get('punchy','')}",
+        "",
+        "## Elevator Pitch",
+        elevator,
+        "",
+        "## Key Metrics",
+    ]
+    for m in metrics:
+        lines.append(f"- {m.get('num','')} — {m.get('label','')}")
+    lines += [
+        "",
+        "## Core Metaphor",
+        metaphor.get("statement", ""),
+        metaphor.get("rationale", ""),
+        "",
+        "## SWOT",
+        "**Strengths:** " + ", ".join(swot.get("strengths", [])),
+        "**Weaknesses:** " + ", ".join(swot.get("weaknesses", [])),
+        "**Opportunities:** " + ", ".join(swot.get("opportunities", [])),
+        "**Threats:** " + ", ".join(swot.get("threats", [])),
+        "",
+        "## Tone Pillars",
+    ]
+    for p in pillars:
+        lines.append(f"- **{p.get('name','')}**: say «{p.get('do_say','')}», not «{p.get('dont_say','')}»")
+    lines += ["", "## Vocabulary Swap"]
+    for v in vocab:
+        lines.append(f"- {v.get('from', v.get('from_', ''))} → {v.get('to', '')}")
+    lines += ["", "## Manifesto", manifesto, "", "## Roadmap"]
+    for r in roadmap:
+        lines.append(f"**{r.get('phase','')} – {r.get('name','')} ({r.get('when','')})**")
+        for pt in r.get("points", []):
+            lines.append(f"  - {pt}")
+    lines += ["", "## Grapevine (Social Proof / Quotes)"]
+    for g in grapevine:
+        lines.append(f"- **{g.get('title','')}**: {g.get('desc','')}")
+    lines += ["", "## Full Brand Dossier (excerpt)", dossier[:1500]]
+
+    return "\n".join(lines)
 
 
 def _export_to_gamma():
