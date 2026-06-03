@@ -35,12 +35,52 @@ def _init_state():
         "proposed_tokens": None,
         "run_dir": None,
         "gamma_prompt": None,
+        "cycle_report_md": None,
+        # Cycle metrics
+        "cycle_metrics": {
+            "session_start": datetime.utcnow().isoformat(),
+            "stages": {},       # stage -> {start, end, duration_s, success, error}
+            "llm_calls": [],    # [{stage, model, input_tokens, output_tokens, cost_usd, ts}]
+            "web_searches": [], # [{stage, query, ts}]
+            "docs_ingested": 0,
+            "corpus_chars": 0,
+            "questions_derived": 0,
+            "evidence_cards_collected": 0,
+            "dossier_chars": 0,
+            "outputs_generated": [],  # ["pptx", "gamma_prompt", "dossier"]
+        },
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
 _init_state()
+
+
+# ── Cycle metrics helpers ─────────────────────────────────────────────────────
+
+def _metrics() -> dict:
+    return st.session_state.cycle_metrics
+
+
+def _stage_start(stage: str):
+    _metrics()["stages"].setdefault(stage, {})["start"] = datetime.utcnow().isoformat()
+
+
+def _stage_end(stage: str, success: bool = True, error: str = ""):
+    s = _metrics()["stages"].setdefault(stage, {})
+    s["end"] = datetime.utcnow().isoformat()
+    s["success"] = success
+    if error:
+        s["error"] = error
+    # compute duration
+    try:
+        from datetime import timezone
+        start = datetime.fromisoformat(s["start"])
+        end = datetime.fromisoformat(s["end"])
+        s["duration_s"] = round((end - start).total_seconds(), 1)
+    except Exception:
+        pass
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -105,44 +145,53 @@ def tab_run():
         if not uploaded_files:
             st.error("Please upload at least one document.")
         else:
-            from src.ingest import ingest_files
+            _stage_start("observe")
+            try:
+                from src.ingest import ingest_files
 
-            with tempfile.TemporaryDirectory() as tmpdir:
-                paths = []
-                for uf in uploaded_files:
-                    p = os.path.join(tmpdir, uf.name)
-                    with open(p, "wb") as f:
-                        f.write(uf.read())
-                    paths.append(p)
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    paths = []
+                    for uf in uploaded_files:
+                        p = os.path.join(tmpdir, uf.name)
+                        with open(p, "wb") as f:
+                            f.write(uf.read())
+                        paths.append(p)
 
-                with st.spinner("Ingesting documents…"):
-                    corpus = ingest_files(paths)
+                    with st.spinner("Ingesting documents…"):
+                        corpus = ingest_files(paths)
 
-            # Prepend hints if provided
-            if hint_product or hint_sector or hint_tech:
-                hints = []
-                if hint_product:
-                    hints.append(f"Product name: {hint_product}")
-                if hint_sector:
-                    hints.append(f"Sector: {hint_sector}")
-                if hint_tech:
-                    hints.append(f"Tech core: {hint_tech}")
-                corpus.insert(0, {
-                    "source_file": "user_hints",
-                    "section": "Hints",
-                    "text": "\n".join(hints),
-                })
+                # Prepend hints if provided
+                if hint_product or hint_sector or hint_tech:
+                    hints = []
+                    if hint_product:
+                        hints.append(f"Product name: {hint_product}")
+                    if hint_sector:
+                        hints.append(f"Sector: {hint_sector}")
+                    if hint_tech:
+                        hints.append(f"Tech core: {hint_tech}")
+                    corpus.insert(0, {
+                        "source_file": "user_hints",
+                        "section": "Hints",
+                        "text": "\n".join(hints),
+                    })
 
-            st.session_state.corpus = corpus
-            _save_artifact("corpus.json", corpus)
+                st.session_state.corpus = corpus
+                _save_artifact("corpus.json", corpus)
+                _metrics()["docs_ingested"] = len(uploaded_files)
+                _metrics()["corpus_chars"] = sum(len(c.get("text", "")) for c in corpus)
 
-            from src.observe import run_observe
-            with st.spinner("Running OBSERVE…"):
-                signal_map = run_observe(corpus, model=models["observe"])
+                from src.observe import run_observe
+                with st.spinner("Running OBSERVE…"):
+                    signal_map = run_observe(corpus, model=models["observe"])
 
-            st.session_state.signal_map = signal_map
-            _save_artifact("signal_map.json", signal_map)
-            st.success("OBSERVE complete.")
+                st.session_state.signal_map = signal_map
+                _save_artifact("signal_map.json", signal_map)
+                _stage_end("observe", success=True)
+                st.success("OBSERVE complete.")
+            except Exception as e:
+                _stage_end("observe", success=False, error=str(e))
+                st.error(f"OBSERVE failed: {e}")
+                raise
 
     if st.session_state.signal_map:
         st.markdown("**Signal Map** (editable):")
@@ -169,12 +218,20 @@ def tab_run():
         if not st.session_state.signal_map:
             st.error("Run OBSERVE first.")
         else:
-            from src.derive import run_derive
-            with st.spinner("Running DERIVE…"):
-                research_plan = run_derive(st.session_state.signal_map, model=models["derive"])
-            st.session_state.research_plan = research_plan
-            _save_artifact("research_plan.json", research_plan)
-            st.success("DERIVE complete.")
+            _stage_start("derive")
+            try:
+                from src.derive import run_derive
+                with st.spinner("Running DERIVE…"):
+                    research_plan = run_derive(st.session_state.signal_map, model=models["derive"])
+                st.session_state.research_plan = research_plan
+                _save_artifact("research_plan.json", research_plan)
+                _metrics()["questions_derived"] = len(research_plan.get("questions", []))
+                _stage_end("derive", success=True)
+                st.success("DERIVE complete.")
+            except Exception as e:
+                _stage_end("derive", success=False, error=str(e))
+                st.error(f"DERIVE failed: {e}")
+                raise
 
     if st.session_state.research_plan:
         st.markdown("**Research Plan** (editable):")
@@ -201,21 +258,36 @@ def tab_run():
         if not st.session_state.research_plan:
             st.error("Run DERIVE first.")
         else:
-            from src.research import run_research
-            questions = st.session_state.research_plan.get("questions", [])
-            progress = st.progress(0)
-            cards_all: list[dict] = []
-            for i, q in enumerate(questions):
-                with st.spinner(f"Researching Q{i+1}/{len(questions)}: {q.get('question', '')[:60]}…"):
-                    partial_plan = {"questions": [q]}
-                    result = run_research(partial_plan, model=models["research"])
-                    cards_all.extend(result.get("cards", []))
-                progress.progress((i + 1) / len(questions))
+            _stage_start("research")
+            try:
+                from src.research import run_research
+                questions = st.session_state.research_plan.get("questions", [])
+                progress = st.progress(0)
+                cards_all: list[dict] = []
+                for i, q in enumerate(questions):
+                    with st.spinner(f"Researching Q{i+1}/{len(questions)}: {q.get('question', '')[:60]}…"):
+                        partial_plan = {"questions": [q]}
+                        result = run_research(partial_plan, model=models["research"])
+                        cards_all.extend(result.get("cards", []))
+                        # track web searches
+                        for sq in q.get("queries", []):
+                            _metrics()["web_searches"].append({
+                                "stage": "research",
+                                "query": sq,
+                                "ts": datetime.utcnow().isoformat(),
+                            })
+                    progress.progress((i + 1) / len(questions))
 
-            evidence_cards = {"cards": cards_all}
-            st.session_state.evidence_cards = evidence_cards
-            _save_artifact("evidence_cards.json", evidence_cards)
-            st.success(f"RESEARCH complete — {len(cards_all)} evidence cards collected.")
+                evidence_cards = {"cards": cards_all}
+                st.session_state.evidence_cards = evidence_cards
+                _save_artifact("evidence_cards.json", evidence_cards)
+                _metrics()["evidence_cards_collected"] = len(cards_all)
+                _stage_end("research", success=True)
+                st.success(f"RESEARCH complete — {len(cards_all)} evidence cards collected.")
+            except Exception as e:
+                _stage_end("research", success=False, error=str(e))
+                st.error(f"RESEARCH failed: {e}")
+                raise
 
     if st.session_state.evidence_cards:
         cards = st.session_state.evidence_cards.get("cards", [])
@@ -245,26 +317,36 @@ def tab_run():
         elif not st.session_state.corpus:
             st.error("No corpus available.")
         else:
-            from src.synthesize import run_synthesize
-            with st.spinner("Running SYNTHESIZE…"):
-                dossier = run_synthesize(
-                    st.session_state.corpus,
-                    st.session_state.evidence_cards,
-                    model=models["synthesize"],
-                )
-            st.session_state.dossier = dossier
-            _save_artifact("dossier.md", dossier)
-            st.success("SYNTHESIZE complete.")
+            _stage_start("synthesize")
+            try:
+                from src.synthesize import run_synthesize
+                with st.spinner("Running SYNTHESIZE…"):
+                    dossier = run_synthesize(
+                        st.session_state.corpus,
+                        st.session_state.evidence_cards,
+                        model=models["synthesize"],
+                    )
+                st.session_state.dossier = dossier
+                _save_artifact("dossier.md", dossier)
+                _metrics()["dossier_chars"] = len(dossier)
+                _stage_end("synthesize", success=True)
+                st.success("SYNTHESIZE complete.")
+            except Exception as e:
+                _stage_end("synthesize", success=False, error=str(e))
+                st.error(f"SYNTHESIZE failed: {e}")
+                raise
 
     if st.session_state.dossier:
         with st.expander("Dossier preview", expanded=True):
             st.markdown(st.session_state.dossier)
-        st.download_button(
+        if st.download_button(
             "Download dossier.md",
             data=st.session_state.dossier,
             file_name="dossier.md",
             mime="text/markdown",
-        )
+        ):
+            if "dossier" not in _metrics()["outputs_generated"]:
+                _metrics()["outputs_generated"].append("dossier")
 
     # ── DISTILL ──────────────────────────────────────────────────────────────
     st.divider()
@@ -275,24 +357,31 @@ def tab_run():
         if not st.session_state.dossier:
             st.error("Run SYNTHESIZE first.")
         else:
-            from src.distill import run_distill
-            from src.config_store import load as config_load
-            brand_tokens = config_load("brand_tokens")
-            deck_layout = config_load("deck_layout")
+            _stage_start("distill")
+            try:
+                from src.distill import run_distill
+                from src.config_store import load as config_load
+                brand_tokens = config_load("brand_tokens")
+                deck_layout = config_load("deck_layout")
 
-            with st.spinner("Running DISTILL…"):
-                deck_spec, proposed_tokens = run_distill(
-                    st.session_state.dossier,
-                    brand_tokens,
-                    deck_layout,
-                    model=models["distill"],
-                )
+                with st.spinner("Running DISTILL…"):
+                    deck_spec, proposed_tokens = run_distill(
+                        st.session_state.dossier,
+                        brand_tokens,
+                        deck_layout,
+                        model=models["distill"],
+                    )
 
-            st.session_state.deck_spec = deck_spec
-            st.session_state.proposed_tokens = proposed_tokens
-            _save_artifact("deck_spec.json", deck_spec)
-            _save_artifact("proposed_brand_tokens.json", proposed_tokens)
-            st.success("DISTILL complete.")
+                st.session_state.deck_spec = deck_spec
+                st.session_state.proposed_tokens = proposed_tokens
+                _save_artifact("deck_spec.json", deck_spec)
+                _save_artifact("proposed_brand_tokens.json", proposed_tokens)
+                _stage_end("distill", success=True)
+                st.success("DISTILL complete.")
+            except Exception as e:
+                _stage_end("distill", success=False, error=str(e))
+                st.error(f"DISTILL failed: {e}")
+                raise
 
     if st.session_state.deck_spec:
         with st.expander("Deck Spec JSON"):
@@ -325,6 +414,8 @@ def tab_run():
             pptx_path = str(_run_dir() / "deck.pptx")
             with st.spinner("Building PPTX…"):
                 build_pptx(st.session_state.deck_spec, brand_tokens, deck_layout, pptx_path)
+            if "pptx" not in _metrics()["outputs_generated"]:
+                _metrics()["outputs_generated"].append("pptx")
             with open(pptx_path, "rb") as f:
                 st.download_button(
                     "Download deck.pptx",
@@ -344,6 +435,8 @@ def tab_run():
         st.caption("No Gamma API key needed — paste this prompt into your Claude Code chat to generate the deck.")
         if st.button("Generate Gamma prompt", key="btn_gamma_prompt"):
             st.session_state["gamma_prompt"] = _build_gamma_prompt()
+            if "gamma_prompt" not in _metrics()["outputs_generated"]:
+                _metrics()["outputs_generated"].append("gamma_prompt")
         if st.session_state.get("gamma_prompt"):
             st.text_area(
                 "Copy this prompt and paste it into Claude Code ↓",
@@ -958,13 +1051,267 @@ def tab_deck_studio():
                 st.text(diff if diff else "(no differences)")
 
 
+# ── Tab 5: Cycle Report ───────────────────────────────────────────────────────
+
+def _build_cycle_report() -> str:
+    """Generate a markdown cycle report from session metrics."""
+    m = _metrics()
+    stages_order = ["observe", "derive", "research", "synthesize", "distill"]
+    now = datetime.utcnow().isoformat()
+
+    lines = [
+        "# Perception Engine — Cycle Report",
+        f"Generated: {now} UTC",
+        f"Session started: {m.get('session_start', 'n/a')}",
+        "",
+        "---",
+        "",
+        "## Pipeline Summary",
+        "",
+        "| Stage | Status | Duration |",
+        "|-------|--------|----------|",
+    ]
+    total_duration = 0.0
+    for stage in stages_order:
+        info = m["stages"].get(stage, {})
+        if not info:
+            lines.append(f"| {stage.upper()} | — not run — | — |")
+            continue
+        status = "✅ Success" if info.get("success") else f"❌ Failed: {info.get('error', '')[:60]}"
+        dur = info.get("duration_s", "?")
+        if isinstance(dur, (int, float)):
+            total_duration += dur
+            dur_str = f"{dur}s"
+        else:
+            dur_str = str(dur)
+        lines.append(f"| {stage.upper()} | {status} | {dur_str} |")
+
+    lines += [
+        f"| **TOTAL** | | **{round(total_duration, 1)}s** |",
+        "",
+        "---",
+        "",
+        "## Input Metrics",
+        "",
+        f"- **Documents ingested:** {m.get('docs_ingested', 0)}",
+        f"- **Corpus size:** {m.get('corpus_chars', 0):,} characters",
+        "",
+        "---",
+        "",
+        "## Pipeline Metrics",
+        "",
+        f"- **Research questions derived:** {m.get('questions_derived', 0)}",
+        f"- **Web searches executed:** {len(m.get('web_searches', []))}",
+        f"- **Evidence cards collected:** {m.get('evidence_cards_collected', 0)}",
+        f"- **Dossier size:** {m.get('dossier_chars', 0):,} characters",
+        "",
+    ]
+
+    # Evidence card breakdown
+    ec = st.session_state.get("evidence_cards") or {}
+    cards = ec.get("cards", [])
+    if cards:
+        from collections import Counter
+        dim_counts = Counter(c.get("dimension", "unknown") for c in cards)
+        tag_counts = Counter(c.get("tag", "unknown") for c in cards)
+        lines += [
+            "### Evidence Cards by Dimension",
+            "",
+            "| Dimension | Count |",
+            "|-----------|-------|",
+        ]
+        for dim, cnt in sorted(dim_counts.items()):
+            lines.append(f"| {dim} | {cnt} |")
+        lines += [
+            "",
+            "### Evidence Cards by Tag",
+            "",
+            "| Tag | Count |",
+            "|-----|-------|",
+        ]
+        for tag, cnt in sorted(tag_counts.items()):
+            lines.append(f"| {tag} | {cnt} |")
+        lines.append("")
+
+    # Web searches list
+    searches = m.get("web_searches", [])
+    if searches:
+        lines += [
+            "---",
+            "",
+            "## Web Searches Executed",
+            "",
+            "| # | Query | Timestamp |",
+            "|---|-------|-----------|",
+        ]
+        for i, s in enumerate(searches, 1):
+            lines.append(f"| {i} | {s.get('query', '')[:80]} | {s.get('ts', '')[:19]} |")
+        lines.append("")
+
+    # Outputs
+    outputs = m.get("outputs_generated", [])
+    lines += [
+        "---",
+        "",
+        "## Outputs Generated",
+        "",
+    ]
+    output_labels = {
+        "dossier": "Brand Dossier (dossier.md)",
+        "pptx": "PPTX Deck (deck.pptx)",
+        "gamma_prompt": "Gamma Mega-Prompt (gamma_prompt.txt)",
+    }
+    if outputs:
+        for o in outputs:
+            lines.append(f"- ✅ {output_labels.get(o, o)}")
+    else:
+        lines.append("- (none yet)")
+    lines.append("")
+
+    # Signal map summary
+    sm = st.session_state.get("signal_map") or {}
+    if sm:
+        lines += [
+            "---",
+            "",
+            "## Signal Map Summary",
+            "",
+            f"- **Product:** {sm.get('product_name', '')}",
+            f"- **Sector:** {sm.get('sector', '')}",
+            f"- **Core:** {sm.get('product_core', '')}",
+            f"- **Signals detected:** {len(sm.get('signals', []))}",
+            f"- **Metrics captured:** {len(sm.get('metrics', []))}",
+            f"- **Tensions identified:** {len(sm.get('tensions', []))}",
+            f"- **Catalysts identified:** {len(sm.get('catalysts', []))}",
+            "",
+        ]
+
+    # Deck spec summary
+    ds = st.session_state.get("deck_spec") or {}
+    if ds:
+        lines += [
+            "---",
+            "",
+            "## Deck Spec Summary",
+            "",
+            f"- **Product:** {ds.get('product', '')}",
+            f"- **Roadmap phases:** {len(ds.get('roadmap', []))}",
+            f"- **SWOT items:** {sum(len(ds.get('swot', {}).get(k, [])) for k in ['strengths','weaknesses','opportunities','threats'])}",
+            f"- **Tone pillars:** {len(ds.get('pillars', []))}",
+            f"- **Vocab swaps:** {len(ds.get('vocab', []))}",
+            f"- **Grapevine items:** {len(ds.get('grapevine', []))}",
+            "",
+        ]
+
+    lines += [
+        "---",
+        "",
+        "*This report was generated automatically by Perception Engine.*",
+        "*Share it with Claude Code to get optimization suggestions for your next run.*",
+    ]
+
+    return "\n".join(lines)
+
+
+def tab_cycle_report():
+    st.header("Cycle Report")
+    st.caption("Usage statistics and pipeline metrics for this session. Share with Claude Code to optimize future runs.")
+
+    m = _metrics()
+    stages_order = ["observe", "derive", "research", "synthesize", "distill"]
+
+    # ── Quick stats ──────────────────────────────────────────────────────────
+    completed = sum(1 for s in stages_order if m["stages"].get(s, {}).get("success"))
+    total_dur = sum(
+        m["stages"][s].get("duration_s", 0)
+        for s in stages_order
+        if isinstance(m["stages"].get(s, {}).get("duration_s"), (int, float))
+    )
+
+    col1, col2, col3, col4, col5 = st.columns(5)
+    col1.metric("Stages completed", f"{completed}/5")
+    col2.metric("Total duration", f"{round(total_dur)}s")
+    col3.metric("Web searches", len(m.get("web_searches", [])))
+    col4.metric("Evidence cards", m.get("evidence_cards_collected", 0))
+    col5.metric("Outputs", len(m.get("outputs_generated", [])))
+
+    st.divider()
+
+    # ── Stage timeline ───────────────────────────────────────────────────────
+    st.subheader("Stage Timeline")
+    for stage in stages_order:
+        info = m["stages"].get(stage, {})
+        if not info:
+            st.markdown(f"**{stage.upper()}** — not run")
+            continue
+        ok = info.get("success", False)
+        dur = info.get("duration_s", "?")
+        icon = "✅" if ok else "❌"
+        err = f" · error: {info.get('error','')[:80]}" if not ok else ""
+        st.markdown(f"{icon} **{stage.upper()}** · {dur}s{err}")
+
+    st.divider()
+
+    # ── Evidence breakdown ───────────────────────────────────────────────────
+    ec = st.session_state.get("evidence_cards") or {}
+    cards = ec.get("cards", [])
+    if cards:
+        import pandas as pd
+        from collections import Counter
+        st.subheader("Evidence Cards")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            dim_data = Counter(c.get("dimension", "unknown") for c in cards)
+            st.markdown("**By dimension**")
+            st.dataframe(
+                pd.DataFrame(dim_data.items(), columns=["Dimension", "Count"]).sort_values("Count", ascending=False),
+                use_container_width=True, hide_index=True,
+            )
+        with col_b:
+            tag_data = Counter(c.get("tag", "unknown") for c in cards)
+            st.markdown("**By tag**")
+            st.dataframe(
+                pd.DataFrame(tag_data.items(), columns=["Tag", "Count"]).sort_values("Count", ascending=False),
+                use_container_width=True, hide_index=True,
+            )
+
+    # ── Web searches ─────────────────────────────────────────────────────────
+    searches = m.get("web_searches", [])
+    if searches:
+        import pandas as pd
+        st.subheader("Web Searches")
+        st.dataframe(
+            pd.DataFrame(searches)[["stage", "query", "ts"]].rename(columns={"ts": "timestamp"}),
+            use_container_width=True, hide_index=True,
+        )
+
+    st.divider()
+
+    # ── Generate & download report ───────────────────────────────────────────
+    st.subheader("Export Report")
+    if st.button("Generate cycle report", key="btn_cycle_report"):
+        st.session_state["cycle_report_md"] = _build_cycle_report()
+        _save_artifact("cycle_report.md", st.session_state["cycle_report_md"])
+
+    if st.session_state.get("cycle_report_md"):
+        st.markdown(st.session_state["cycle_report_md"])
+        st.download_button(
+            "Download cycle_report.md",
+            data=st.session_state["cycle_report_md"],
+            file_name="cycle_report.md",
+            mime="text/markdown",
+            key="dl_cycle_report",
+        )
+        st.info("Tip: paste this report into Claude Code and ask for optimization suggestions based on the metrics.")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     st.title("🧭 Perception Engine")
     st.caption("Internal brand-intelligence pipeline · Ingest → OBSERVE → DERIVE → RESEARCH → SYNTHESIZE → DISTILL")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Run", "Prompt Studio", "Brand Studio", "Deck Studio"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Run", "Prompt Studio", "Brand Studio", "Deck Studio", "Cycle Report"])
 
     with tab1:
         tab_run()
@@ -974,6 +1321,8 @@ def main():
         tab_brand_studio()
     with tab4:
         tab_deck_studio()
+    with tab5:
+        tab_cycle_report()
 
 
 if __name__ == "__main__":
