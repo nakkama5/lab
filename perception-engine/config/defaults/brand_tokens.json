@@ -1,0 +1,12 @@
+{
+  "palette": {
+    "ink":     {"hex": "17120E", "role": "Primary",   "why": "Authority, depth, premium stability"},
+    "jade":    {"hex": "2C5D4F", "role": "Secondary",  "why": "Craft, growth, trust without coldness"},
+    "saffron": {"hex": "E1A23C", "role": "Accent",     "why": "The spark of an idea; the anti-blue"},
+    "clay":    {"hex": "B5683E", "role": "Support",    "why": "Grounded warmth"},
+    "cream":   {"hex": "F4EEE2", "role": "Canvas",     "why": "Editorial, tactile, calm"}
+  },
+  "type": {"display": "Georgia", "body": "Calibri"},
+  "rules": "Ink + Cream ~70% of surfaces; Jade structures; Saffron only at moments of delight.",
+  "motif": "Cartographic constellation: points connected by thin lines, warm glow."
+}

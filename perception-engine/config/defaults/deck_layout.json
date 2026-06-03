@@ -1,0 +1,18 @@
+{
+  "sections": [
+    {"type": "cover",            "enabled": true,  "title": "Cover"},
+    {"type": "metrics",          "enabled": true,  "title": "The numbers",          "count": 4},
+    {"type": "legacy_evolution", "enabled": true,  "title": "Legacy vs. Evolution", "count": 5},
+    {"type": "jargon_to_value",  "enabled": true,  "title": "From feature to value","count": 4},
+    {"type": "swot",             "enabled": true,  "title": "SWOT",                 "count": 4},
+    {"type": "metaphor",         "enabled": true,  "title": "Creative concept"},
+    {"type": "palette",          "enabled": true,  "title": "Colour palette"},
+    {"type": "tone_pillars",     "enabled": true,  "title": "Tone of voice",        "count": 3},
+    {"type": "vocab",            "enabled": true,  "title": "Vocabulary swap",      "count": 6},
+    {"type": "taglines",         "enabled": true,  "title": "The baselines"},
+    {"type": "manifesto",        "enabled": true,  "title": "Manifesto"},
+    {"type": "roadmap",          "enabled": true,  "title": "Roadmap",              "count": 3},
+    {"type": "grapevine",        "enabled": true,  "title": "Bypassing the critics","count": 3},
+    {"type": "closing",          "enabled": true,  "title": "Closing"}
+  ]
+}
