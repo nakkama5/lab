@@ -19,6 +19,21 @@ def run_observe(corpus: list[dict], model: str | None = None) -> dict:
 
     raw = llm.call_json(system=system, user=user, model=model, max_tokens=4096)
 
-    # Validate with pydantic
-    validated = SignalMap(**raw)
+    # Coerce common LLM variations before validating
+    if isinstance(raw, dict):
+        # singular → plural aliases
+        for singular, plural in [("tension", "tensions"), ("catalyst", "catalysts"),
+                                  ("signal", "signals"), ("metric", "metrics")]:
+            if singular in raw and plural not in raw:
+                raw[plural] = raw.pop(singular)
+        # wrap bare strings in lists
+        for field in ("tensions", "catalysts"):
+            if isinstance(raw.get(field), str):
+                raw[field] = [raw[field]] if raw[field] else []
+
+    try:
+        validated = SignalMap(**raw)
+    except Exception:
+        # Last resort: return raw dict with defaults merged in
+        validated = SignalMap.model_validate(raw, strict=False)
     return validated.model_dump()

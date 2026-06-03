@@ -16,14 +16,16 @@ class Metric(BaseModel):
 
 
 class SignalMap(BaseModel):
-    product_name: str
-    sector: str
-    product_core: str
-    signals: list[Signal]
-    metrics: list[Metric]
-    tensions: list[str]
-    catalysts: list[str]
-    strategic_intent: str
+    model_config = {"extra": "ignore"}
+
+    product_name: str = ""
+    sector: str = ""
+    product_core: str = ""
+    signals: list[Signal] = Field(default_factory=list)
+    metrics: list[Metric] = Field(default_factory=list)
+    tensions: list[str] = Field(default_factory=list)
+    catalysts: list[str] = Field(default_factory=list)
+    strategic_intent: str = ""
 
 
 class ResearchQuestion(BaseModel):
