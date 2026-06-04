@@ -131,11 +131,12 @@ def call_with_web_search_full(
         btype = getattr(block, "type", "")
         if btype == "text":
             text_parts.append(block.text)
-        elif btype == "tool_use" and getattr(block, "name", "") == "web_search":
-            # Capture the query that was fired
+        elif btype in ("tool_use", "server_tool_use") and getattr(block, "name", "") == "web_search":
+            # Built-in web search returns server_tool_use blocks
             inp = getattr(block, "input", {}) or {}
-            search_events.append({"query": inp.get("query", ""), "results": []})
-        elif btype == "tool_result":
+            query = inp.get("query", "") if isinstance(inp, dict) else ""
+            search_events.append({"query": query, "results": []})
+        elif btype in ("tool_result", "web_search_tool_result"):
             # Attach results to the last search event
             if search_events:
                 content = getattr(block, "content", []) or []
@@ -143,13 +144,21 @@ def call_with_web_search_full(
                 if isinstance(content, list):
                     for item in content:
                         item_type = getattr(item, "type", "")
-                        if item_type == "web_search_result":
+                        if item_type in ("web_search_result", "web_search_result_block"):
                             results.append({
                                 "url": getattr(item, "url", ""),
                                 "title": getattr(item, "title", ""),
                                 "snippet": getattr(item, "snippet", "")[:300],
                             })
+                        elif isinstance(item, dict):
+                            results.append({
+                                "url": item.get("url", ""),
+                                "title": item.get("title", ""),
+                                "snippet": str(item.get("snippet", "") or item.get("text", ""))[:300],
+                            })
                 search_events[-1]["results"] = results
+        # Log all block types to stderr for debugging
+        print(f"[llm] block type={btype!r} name={getattr(block, 'name', '')!r}", file=sys.stderr)
 
     return "\n".join(text_parts), search_events
 

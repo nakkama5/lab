@@ -32,6 +32,9 @@ class SignalMap(BaseModel):
     @classmethod
     def model_validate(cls, obj, *, strict=None, from_attributes=None, context=None):
         if isinstance(obj, dict):
+            # product → product_name alias
+            if "product" in obj and "product_name" not in obj:
+                obj = {**obj, "product_name": obj.pop("product")}
             # singular → plural aliases
             for s, p in [("tension","tensions"),("catalyst","catalysts"),("signal","signals"),("metric","metrics")]:
                 if s in obj and p not in obj:
