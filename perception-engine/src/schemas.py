@@ -32,12 +32,31 @@ class SignalMap(BaseModel):
     @classmethod
     def model_validate(cls, obj, *, strict=None, from_attributes=None, context=None):
         if isinstance(obj, dict):
+            # singular → plural aliases
             for s, p in [("tension","tensions"),("catalyst","catalysts"),("signal","signals"),("metric","metrics")]:
                 if s in obj and p not in obj:
                     obj = {**obj, p: obj.pop(s)}
+            # bare strings → single-item lists
             for f in ("tensions", "catalysts"):
                 if isinstance(obj.get(f), str):
                     obj = {**obj, f: [obj[f]] if obj[f] else []}
+            # dict → list coercion for signals and metrics
+            # (LLM sometimes returns {"key": {observation:..}, ...} instead of [{...},...])
+            for f in ("signals", "metrics"):
+                v = obj.get(f)
+                if isinstance(v, dict):
+                    items = []
+                    for key, val in v.items():
+                        if isinstance(val, dict):
+                            # use key as id if not present
+                            entry = {"id": key, **val}
+                            # for metrics, try to pull num/label from nested keys
+                            if f == "metrics" and "num" not in entry and "label" not in entry:
+                                entry = {"num": key, "label": str(list(val.values())[0]) if val else key}
+                        else:
+                            entry = {"id": key, "observation": str(val)} if f == "signals" else {"num": key, "label": str(val)}
+                        items.append(entry)
+                    obj = {**obj, f: items}
         return super().model_validate(obj, strict=strict, from_attributes=from_attributes, context=context)
 
 
