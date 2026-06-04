@@ -23,212 +23,313 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Apple-inspired CSS ────────────────────────────────────────────────────────
+# ── Dark theme CSS ────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* ── Palette ──────────────────────────────────────────────────────────────────
+   --bg:       #0a0a0a   page background
+   --surface:  #141414   card / input background
+   --border:   #2a2a2a   subtle borders
+   --muted:    #3a3a3a   hover states, secondary surfaces
+   --text:     #f0f0f0   primary text
+   --sub:      #888888   secondary / captions
+   --accent:   #e8d5a0   warm gold accent (buttons, links, focus)
+   --accent2:  #b0c4de   steel blue for secondary actions
+──────────────────────────────────────────────────────────────────────────── */
+
 html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    color: #f0f0f0 !important;
 }
 
-/* Background */
-.stApp {
-    background: #f5f5f7;
-}
-
-/* Main content area */
+/* ── Backgrounds ────────────────────────────────────────────────────────────── */
+.stApp { background: #0a0a0a !important; }
 section[data-testid="stMainBlockContainer"] {
-    background: #f5f5f7;
+    background: #0a0a0a !important;
     padding-top: 2rem;
 }
+section[data-testid="stSidebar"] {
+    background: #0f0f0f !important;
+    border-right: 1px solid #2a2a2a !important;
+}
 
-/* Cards / containers */
+/* ── All text defaults ────────────────────────────────────────────────────── */
+p, li, span, div, label, .stMarkdown {
+    color: #f0f0f0 !important;
+}
+
+/* ── Cards / bordered containers ─────────────────────────────────────────── */
 div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #ffffff;
-    border-radius: 18px;
-    border: 1px solid #e0e0e5;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    padding: 1.5rem;
+    background: #141414 !important;
+    border-radius: 16px !important;
+    border: 1px solid #2a2a2a !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+    padding: 1.5rem !important;
 }
 
-/* Buttons */
-.stButton > button {
-    background: #0071e3 !important;
-    color: #ffffff !important;
-    border: none !important;
-    border-radius: 980px !important;
-    padding: 0.5rem 1.4rem !important;
-    font-size: 0.875rem !important;
-    font-weight: 500 !important;
-    letter-spacing: -0.01em !important;
-    transition: background 0.15s ease !important;
-    box-shadow: none !important;
-}
-.stButton > button:hover {
-    background: #0077ed !important;
-}
-.stButton > button[kind="secondary"] {
-    background: #e8e8ed !important;
-    color: #1d1d1f !important;
-}
-.stButton > button[kind="secondary"]:hover {
-    background: #d2d2d7 !important;
-}
-
-/* Download buttons */
-.stDownloadButton > button {
-    background: #e8e8ed !important;
-    color: #0071e3 !important;
-    border: none !important;
-    border-radius: 980px !important;
-    font-size: 0.875rem !important;
-    font-weight: 500 !important;
-}
-
-/* Headers */
+/* ── Headers ─────────────────────────────────────────────────────────────── */
 h1 {
     font-size: 2rem !important;
     font-weight: 700 !important;
     letter-spacing: -0.03em !important;
-    color: #1d1d1f !important;
+    color: #f0f0f0 !important;
 }
 h2 {
     font-size: 1.4rem !important;
     font-weight: 600 !important;
     letter-spacing: -0.02em !important;
-    color: #1d1d1f !important;
+    color: #f0f0f0 !important;
 }
 h3 {
     font-size: 1.1rem !important;
     font-weight: 600 !important;
-    color: #1d1d1f !important;
+    color: #f0f0f0 !important;
 }
-
-/* Subheader (st.subheader) */
 [data-testid="stHeadingWithActionElements"] h2 {
     font-size: 1.25rem !important;
     font-weight: 600 !important;
-    color: #1d1d1f !important;
+    color: #f0f0f0 !important;
 }
 
-/* Caption / small text */
-.stCaption, small {
-    color: #6e6e73 !important;
+/* ── Captions ────────────────────────────────────────────────────────────── */
+.stCaption, small, [data-testid="stCaptionContainer"] {
+    color: #888888 !important;
     font-size: 0.8rem !important;
 }
 
-/* Text inputs */
+/* ── Primary buttons ────────────────────────────────────────────────────── */
+.stButton > button {
+    background: #e8d5a0 !important;
+    color: #0a0a0a !important;
+    border: none !important;
+    border-radius: 980px !important;
+    padding: 0.5rem 1.4rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+    transition: background 0.15s ease !important;
+    box-shadow: none !important;
+}
+.stButton > button:hover {
+    background: #f0e0b0 !important;
+    color: #0a0a0a !important;
+}
+.stButton > button[kind="secondary"] {
+    background: #2a2a2a !important;
+    color: #f0f0f0 !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    background: #3a3a3a !important;
+    color: #f0f0f0 !important;
+}
+
+/* ── Download buttons ───────────────────────────────────────────────────── */
+.stDownloadButton > button {
+    background: #2a2a2a !important;
+    color: #e8d5a0 !important;
+    border: 1px solid #3a3a3a !important;
+    border-radius: 980px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+}
+.stDownloadButton > button:hover {
+    background: #3a3a3a !important;
+    color: #f0e0b0 !important;
+}
+
+/* ── Text inputs & textareas ────────────────────────────────────────────── */
 .stTextInput input, .stTextArea textarea {
     border-radius: 10px !important;
-    border: 1px solid #d2d2d7 !important;
-    background: #ffffff !important;
+    border: 1px solid #2a2a2a !important;
+    background: #141414 !important;
     font-size: 0.9rem !important;
-    color: #1d1d1f !important;
+    color: #f0f0f0 !important;
+    caret-color: #e8d5a0 !important;
 }
 .stTextInput input:focus, .stTextArea textarea:focus {
-    border-color: #0071e3 !important;
-    box-shadow: 0 0 0 3px rgba(0,113,227,0.15) !important;
+    border-color: #e8d5a0 !important;
+    box-shadow: 0 0 0 3px rgba(232,213,160,0.15) !important;
+    outline: none !important;
+}
+.stTextInput input::placeholder, .stTextArea textarea::placeholder {
+    color: #555555 !important;
 }
 
-/* Selectbox */
+/* ── Selectbox ──────────────────────────────────────────────────────────── */
 .stSelectbox > div > div {
     border-radius: 10px !important;
-    border: 1px solid #d2d2d7 !important;
-    background: #ffffff !important;
+    border: 1px solid #2a2a2a !important;
+    background: #141414 !important;
+    color: #f0f0f0 !important;
+}
+.stSelectbox svg { fill: #888888 !important; }
+
+/* ── Number input ───────────────────────────────────────────────────────── */
+.stNumberInput input {
+    background: #141414 !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 8px !important;
 }
 
-/* Expanders */
-.streamlit-expanderHeader {
-    background: #f5f5f7 !important;
+/* ── Expanders ──────────────────────────────────────────────────────────── */
+.streamlit-expanderHeader, [data-testid="stExpanderToggleIcon"] {
+    background: #141414 !important;
     border-radius: 10px !important;
     font-weight: 500 !important;
-    color: #1d1d1f !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #2a2a2a !important;
+}
+.streamlit-expanderContent {
+    background: #0f0f0f !important;
+    border: 1px solid #2a2a2a !important;
+    border-top: none !important;
 }
 
-/* Metric */
+/* ── Metrics ────────────────────────────────────────────────────────────── */
 [data-testid="stMetric"] {
-    background: #ffffff;
-    border-radius: 14px;
-    padding: 1rem 1.2rem;
-    border: 1px solid #e0e0e5;
+    background: #141414 !important;
+    border-radius: 14px !important;
+    padding: 1rem 1.2rem !important;
+    border: 1px solid #2a2a2a !important;
 }
-[data-testid="stMetricLabel"] {
-    font-size: 0.75rem !important;
-    color: #6e6e73 !important;
+[data-testid="stMetricLabel"] p {
+    font-size: 0.72rem !important;
+    color: #888888 !important;
     font-weight: 500 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.06em !important;
 }
 [data-testid="stMetricValue"] {
     font-size: 1.8rem !important;
     font-weight: 700 !important;
-    color: #1d1d1f !important;
+    color: #e8d5a0 !important;
     letter-spacing: -0.03em !important;
 }
 
-/* Tabs */
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
-    background: #e8e8ed;
-    border-radius: 980px;
-    padding: 3px;
-    gap: 2px;
+    background: #141414 !important;
+    border-radius: 980px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+    border: 1px solid #2a2a2a !important;
 }
 .stTabs [data-baseweb="tab"] {
     border-radius: 980px !important;
     font-weight: 500 !important;
     font-size: 0.875rem !important;
-    color: #6e6e73 !important;
+    color: #888888 !important;
     padding: 6px 18px !important;
+    background: transparent !important;
 }
 .stTabs [aria-selected="true"] {
-    background: #ffffff !important;
-    color: #1d1d1f !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
+    background: #2a2a2a !important;
+    color: #f0f0f0 !important;
+    box-shadow: none !important;
 }
 
-/* Success / Error / Info banners */
+/* ── Alerts / banners ───────────────────────────────────────────────────── */
 .stAlert {
     border-radius: 12px !important;
     border: none !important;
 }
+[data-testid="stAlertContentContainer"] p {
+    color: inherit !important;
+}
+/* Success */
+div[data-testid="stAlert"][data-type="success"] {
+    background: #0d2010 !important;
+    border: 1px solid #1a4020 !important;
+}
+div[data-testid="stAlert"][data-type="success"] p { color: #6fcf97 !important; }
+/* Error */
+div[data-testid="stAlert"][data-type="error"] {
+    background: #1e0a0a !important;
+    border: 1px solid #3d1010 !important;
+}
+div[data-testid="stAlert"][data-type="error"] p { color: #eb5757 !important; }
+/* Info */
+div[data-testid="stAlert"][data-type="info"] {
+    background: #0a1520 !important;
+    border: 1px solid #1a3040 !important;
+}
+div[data-testid="stAlert"][data-type="info"] p { color: #b0c4de !important; }
+/* Warning */
+div[data-testid="stAlert"][data-type="warning"] {
+    background: #1a1200 !important;
+    border: 1px solid #3a2800 !important;
+}
+div[data-testid="stAlert"][data-type="warning"] p { color: #e8d5a0 !important; }
 
-/* Divider */
+/* ── Divider ────────────────────────────────────────────────────────────── */
 hr {
-    border-color: #e0e0e5 !important;
+    border-color: #2a2a2a !important;
     margin: 1.5rem 0 !important;
 }
 
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background: #ffffff !important;
-    border-right: 1px solid #e0e0e5 !important;
+/* ── Progress bar ───────────────────────────────────────────────────────── */
+.stProgress > div > div > div > div {
+    background: #e8d5a0 !important;
+    border-radius: 980px !important;
 }
-
-/* Progress bar */
 .stProgress > div > div {
-    background: #0071e3 !important;
+    background: #2a2a2a !important;
     border-radius: 980px !important;
 }
 
-/* Dataframe */
+/* ── Dataframe ──────────────────────────────────────────────────────────── */
 .stDataFrame {
     border-radius: 12px !important;
-    overflow: hidden;
-    border: 1px solid #e0e0e5 !important;
+    overflow: hidden !important;
+    border: 1px solid #2a2a2a !important;
+}
+.stDataFrame [data-testid="StyledDataFrameDataCell"] {
+    color: #f0f0f0 !important;
+}
+.stDataFrame [data-testid="StyledDataFrameHeaderCell"] {
+    color: #888888 !important;
+    background: #141414 !important;
 }
 
-/* File uploader */
+/* ── File uploader ──────────────────────────────────────────────────────── */
 [data-testid="stFileUploaderDropzone"] {
     border-radius: 14px !important;
-    border: 2px dashed #d2d2d7 !important;
-    background: #fafafa !important;
+    border: 2px dashed #2a2a2a !important;
+    background: #0f0f0f !important;
+}
+[data-testid="stFileUploaderDropzone"] p,
+[data-testid="stFileUploaderDropzone"] span {
+    color: #888888 !important;
 }
 
-/* Spinner text */
-.stSpinner > div {
-    color: #6e6e73 !important;
-}
+/* ── Checkbox ───────────────────────────────────────────────────────────── */
+.stCheckbox label p { color: #f0f0f0 !important; }
+.stCheckbox [data-testid="stWidgetLabel"] p { color: #f0f0f0 !important; }
+
+/* ── Radio ──────────────────────────────────────────────────────────────── */
+.stRadio label p { color: #f0f0f0 !important; }
+
+/* ── Color picker ───────────────────────────────────────────────────────── */
+.stColorPicker label p { color: #f0f0f0 !important; }
+
+/* ── JSON viewer ────────────────────────────────────────────────────────── */
+.stJson { background: #0f0f0f !important; border-radius: 10px !important; }
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+.stSpinner > div { color: #888888 !important; }
+
+/* ── Links ──────────────────────────────────────────────────────────────── */
+a { color: #e8d5a0 !important; }
+a:hover { color: #f0e0b0 !important; }
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -986,7 +1087,7 @@ def tab_prompt_studio():
         for i, ph in enumerate(required):
             present = ph in current_text
             with cols[i]:
-                color = "green" if present else "red"
+                color = "#6fcf97" if present else "#eb5757"
                 st.markdown(
                     f"<span style='color:{color};font-weight:bold'>{ph}</span>",
                     unsafe_allow_html=True,
@@ -1598,8 +1699,8 @@ def main():
 
     # Confidentiality notice
     st.markdown("""
-<div style='background:#fff3cd;border-radius:12px;padding:0.6rem 1.1rem;margin-bottom:1rem;font-size:0.8rem;color:#856404;border:1px solid #ffc107;'>
-🔒 <strong>Confidentialité</strong> — Les données uploadées restent dans cette session Streamlit et sont supprimées à sa fermeture. Elles ne sont jamais stockées de façon permanente côté serveur. Utilisez le bouton <em>Clear session</em> pour effacer immédiatement.
+<div style='background:#1a1200;border-radius:12px;padding:0.6rem 1.1rem;margin-bottom:1rem;font-size:0.8rem;color:#e8d5a0;border:1px solid #3a2800;'>
+🔒 <strong style="color:#f0e0b0;">Confidentialité</strong> — Les données uploadées restent dans cette session et sont supprimées à sa fermeture. Utilisez <em>Clear session</em> pour effacer immédiatement.
 </div>
 """, unsafe_allow_html=True)
 
