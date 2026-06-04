@@ -82,7 +82,7 @@ def call_with_web_search(
     web_search_tool = {
         "type": "web_search_20250305",
         "name": "web_search",
-        "max_uses": 5,
+        "max_uses": 10,
     }
     response = client.messages.create(
         model=model,
@@ -99,6 +99,59 @@ def call_with_web_search(
         if hasattr(block, "type") and block.type == "text":
             text_parts.append(block.text)
     return "\n".join(text_parts)
+
+
+def call_with_web_search_full(
+    system: str,
+    user: str,
+    model: str = MODEL_RESEARCH,
+    max_tokens: int = 8192,
+) -> tuple[str, list[dict]]:
+    """Call model with web search. Returns (text, search_events) where
+    search_events is a list of {query, results: [{url, title, snippet}]}."""
+    client = _get_client()
+    web_search_tool = {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 10,
+    }
+    response = client.messages.create(
+        model=model,
+        max_tokens=max_tokens,
+        system=system,
+        messages=[{"role": "user", "content": user}],
+        tools=[web_search_tool],
+    )
+    _log_usage(model, response.usage)
+
+    text_parts = []
+    search_events: list[dict] = []
+
+    for block in response.content:
+        btype = getattr(block, "type", "")
+        if btype == "text":
+            text_parts.append(block.text)
+        elif btype == "tool_use" and getattr(block, "name", "") == "web_search":
+            # Capture the query that was fired
+            inp = getattr(block, "input", {}) or {}
+            search_events.append({"query": inp.get("query", ""), "results": []})
+        elif btype == "tool_result":
+            # Attach results to the last search event
+            if search_events:
+                content = getattr(block, "content", []) or []
+                results = []
+                if isinstance(content, list):
+                    for item in content:
+                        item_type = getattr(item, "type", "")
+                        if item_type == "web_search_result":
+                            results.append({
+                                "url": getattr(item, "url", ""),
+                                "title": getattr(item, "title", ""),
+                                "snippet": getattr(item, "snippet", "")[:300],
+                            })
+                search_events[-1]["results"] = results
+
+    return "\n".join(text_parts), search_events
 
 
 def parse_json(raw: str) -> Any:

@@ -23,6 +23,215 @@ st.set_page_config(
     layout="wide",
 )
 
+# ── Apple-inspired CSS ────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Background */
+.stApp {
+    background: #f5f5f7;
+}
+
+/* Main content area */
+section[data-testid="stMainBlockContainer"] {
+    background: #f5f5f7;
+    padding-top: 2rem;
+}
+
+/* Cards / containers */
+div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #ffffff;
+    border-radius: 18px;
+    border: 1px solid #e0e0e5;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    padding: 1.5rem;
+}
+
+/* Buttons */
+.stButton > button {
+    background: #0071e3 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 980px !important;
+    padding: 0.5rem 1.4rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.01em !important;
+    transition: background 0.15s ease !important;
+    box-shadow: none !important;
+}
+.stButton > button:hover {
+    background: #0077ed !important;
+}
+.stButton > button[kind="secondary"] {
+    background: #e8e8ed !important;
+    color: #1d1d1f !important;
+}
+.stButton > button[kind="secondary"]:hover {
+    background: #d2d2d7 !important;
+}
+
+/* Download buttons */
+.stDownloadButton > button {
+    background: #e8e8ed !important;
+    color: #0071e3 !important;
+    border: none !important;
+    border-radius: 980px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+}
+
+/* Headers */
+h1 {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.03em !important;
+    color: #1d1d1f !important;
+}
+h2 {
+    font-size: 1.4rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+    color: #1d1d1f !important;
+}
+h3 {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: #1d1d1f !important;
+}
+
+/* Subheader (st.subheader) */
+[data-testid="stHeadingWithActionElements"] h2 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    color: #1d1d1f !important;
+}
+
+/* Caption / small text */
+.stCaption, small {
+    color: #6e6e73 !important;
+    font-size: 0.8rem !important;
+}
+
+/* Text inputs */
+.stTextInput input, .stTextArea textarea {
+    border-radius: 10px !important;
+    border: 1px solid #d2d2d7 !important;
+    background: #ffffff !important;
+    font-size: 0.9rem !important;
+    color: #1d1d1f !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #0071e3 !important;
+    box-shadow: 0 0 0 3px rgba(0,113,227,0.15) !important;
+}
+
+/* Selectbox */
+.stSelectbox > div > div {
+    border-radius: 10px !important;
+    border: 1px solid #d2d2d7 !important;
+    background: #ffffff !important;
+}
+
+/* Expanders */
+.streamlit-expanderHeader {
+    background: #f5f5f7 !important;
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+    color: #1d1d1f !important;
+}
+
+/* Metric */
+[data-testid="stMetric"] {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    border: 1px solid #e0e0e5;
+}
+[data-testid="stMetricLabel"] {
+    font-size: 0.75rem !important;
+    color: #6e6e73 !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+}
+[data-testid="stMetricValue"] {
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    color: #1d1d1f !important;
+    letter-spacing: -0.03em !important;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    background: #e8e8ed;
+    border-radius: 980px;
+    padding: 3px;
+    gap: 2px;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 980px !important;
+    font-weight: 500 !important;
+    font-size: 0.875rem !important;
+    color: #6e6e73 !important;
+    padding: 6px 18px !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #ffffff !important;
+    color: #1d1d1f !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Success / Error / Info banners */
+.stAlert {
+    border-radius: 12px !important;
+    border: none !important;
+}
+
+/* Divider */
+hr {
+    border-color: #e0e0e5 !important;
+    margin: 1.5rem 0 !important;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #e0e0e5 !important;
+}
+
+/* Progress bar */
+.stProgress > div > div {
+    background: #0071e3 !important;
+    border-radius: 980px !important;
+}
+
+/* Dataframe */
+.stDataFrame {
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 1px solid #e0e0e5 !important;
+}
+
+/* File uploader */
+[data-testid="stFileUploaderDropzone"] {
+    border-radius: 14px !important;
+    border: 2px dashed #d2d2d7 !important;
+    background: #fafafa !important;
+}
+
+/* Spinner text */
+.stSpinner > div {
+    color: #6e6e73 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ── Session state defaults ────────────────────────────────────────────────────
 def _init_state():
     defaults = {
@@ -264,26 +473,47 @@ def tab_run():
                 questions = st.session_state.research_plan.get("questions", [])
                 progress = st.progress(0)
                 cards_all: list[dict] = []
+                search_log_all: list[dict] = []
+
+                live_container = st.container()
+                with live_container:
+                    st.markdown("**Recherches en cours…**")
+                    live_placeholder = st.empty()
+
+                live_lines: list[str] = []
+
+                def _on_question_done(question_text: str, search_events: list[dict]):
+                    for ev in search_events:
+                        q = ev.get("query", "")
+                        n = len(ev.get("results", []))
+                        live_lines.append(f"🔍 **{q}** — {n} résultats")
+                        _metrics()["web_searches"].append({
+                            "stage": "research",
+                            "query": q,
+                            "ts": datetime.utcnow().isoformat(),
+                        })
+                    live_placeholder.markdown("\n\n".join(live_lines[-12:]))
+
                 for i, q in enumerate(questions):
-                    with st.spinner(f"Researching Q{i+1}/{len(questions)}: {q.get('question', '')[:60]}…"):
+                    with st.spinner(f"Q{i+1}/{len(questions)}: {q.get('question', '')[:70]}…"):
                         partial_plan = {"questions": [q]}
-                        result = run_research(partial_plan, model=models["research"])
+                        result = run_research(
+                            partial_plan,
+                            model=models["research"],
+                            progress_cb=_on_question_done,
+                        )
                         cards_all.extend(result.get("cards", []))
-                        # track web searches
-                        for sq in q.get("queries", []):
-                            _metrics()["web_searches"].append({
-                                "stage": "research",
-                                "query": sq,
-                                "ts": datetime.utcnow().isoformat(),
-                            })
+                        search_log_all.extend(result.get("search_log", []))
                     progress.progress((i + 1) / len(questions))
 
-                evidence_cards = {"cards": cards_all}
+                live_placeholder.empty()
+
+                evidence_cards = {"cards": cards_all, "search_log": search_log_all}
                 st.session_state.evidence_cards = evidence_cards
                 _save_artifact("evidence_cards.json", evidence_cards)
-                _metrics()["evidence_cards_collected"] = len(cards_all)
+                _metrics()["evidence_cards_collected"] = len([c for c in cards_all if not c.get("_raw_source")])
                 _stage_end("research", success=True)
-                st.success(f"RESEARCH complete — {len(cards_all)} evidence cards collected.")
+                st.success(f"RESEARCH complete — {_metrics()['evidence_cards_collected']} evidence cards, {len(_metrics()['web_searches'])} searches.")
             except Exception as e:
                 _stage_end("research", success=False, error=str(e))
                 st.error(f"RESEARCH failed: {e}")
@@ -291,20 +521,48 @@ def tab_run():
 
     if st.session_state.evidence_cards:
         cards = st.session_state.evidence_cards.get("cards", [])
+        search_log = st.session_state.evidence_cards.get("search_log", [])
+
         if cards:
             import pandas as pd
-            df = pd.DataFrame([
-                {
-                    "ID": c.get("id", ""),
-                    "Claim": c.get("claim", "")[:100],
-                    "Source": c.get("source_title", ""),
-                    "URL": c.get("url", ""),
-                    "Tag": c.get("tag", ""),
-                    "Dimension": c.get("dimension", ""),
-                }
-                for c in cards
-            ])
-            st.dataframe(df, use_container_width=True)
+
+            # Synthesised cards (not raw source entries)
+            synth_cards = [c for c in cards if not c.get("_raw_source")]
+
+            st.markdown(f"**{len(synth_cards)} evidence cards** · {len(search_log)} requêtes web")
+
+            # Cards table
+            with st.expander("Evidence cards", expanded=True):
+                df = pd.DataFrame([
+                    {
+                        "ID": c.get("id", ""),
+                        "Dimension": c.get("dimension", ""),
+                        "Tag": c.get("tag", ""),
+                        "Claim": c.get("claim", "")[:120],
+                        "Source": c.get("source_title", ""),
+                        "URL": c.get("url", ""),
+                    }
+                    for c in synth_cards
+                ])
+                st.dataframe(df, use_container_width=True, hide_index=True)
+
+            # Sources by question
+            if search_log:
+                with st.expander("🔍 Recherches web & sources brutes"):
+                    for entry in search_log:
+                        st.markdown(f"**Q · {entry.get('question','')[:80]}**")
+                        st.caption(f"Requête : `{entry.get('query','')}`")
+                        results = entry.get("results", [])
+                        if results:
+                            for r in results:
+                                url = r.get("url", "")
+                                title = r.get("title", url)
+                                snippet = r.get("snippet", "")
+                                st.markdown(
+                                    f"- [{title}]({url})" + (f"  \n  *{snippet[:150]}…*" if snippet else ""),
+                                    unsafe_allow_html=False,
+                                )
+                        st.divider()
 
     # ── SYNTHESIZE ───────────────────────────────────────────────────────────
     st.divider()
@@ -452,12 +710,60 @@ def tab_run():
             )
 
 
+def _infer_gamma_theme(palette: dict, motif: str) -> str:
+    """Infer the closest Gamma theme name from the brand palette.
+
+    Gamma themes available: dark, light, minimal, bold, elegant, gradient,
+    nature, tech, luxury, pastel. We pick based on dominant color tone.
+    """
+    # Extract all hex values
+    hexes = []
+    for val in palette.values():
+        if isinstance(val, dict):
+            h = val.get("hex", "")
+            if h:
+                hexes.append(h.lower().lstrip("#"))
+
+    def luminance(h: str) -> float:
+        try:
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        except Exception:
+            return 0.5
+
+    if not hexes:
+        return "minimal"
+
+    avg_lum = sum(luminance(h) for h in hexes) / len(hexes)
+    motif_lower = (motif or "").lower()
+
+    # Dark background dominant → dark/luxury
+    if avg_lum < 0.3:
+        if any(w in motif_lower for w in ["luxury", "premium", "elegant", "gold", "cartography"]):
+            return "luxury"
+        return "dark"
+    # Very light → minimal or pastel
+    if avg_lum > 0.75:
+        if any(w in motif_lower for w in ["pastel", "soft", "gentle"]):
+            return "pastel"
+        return "minimal"
+    # Mid-tone: pick by motif keywords
+    if any(w in motif_lower for w in ["tech", "digital", "data", "code", "ai"]):
+        return "tech"
+    if any(w in motif_lower for w in ["nature", "organic", "green", "plant"]):
+        return "nature"
+    if any(w in motif_lower for w in ["bold", "impact", "strong", "power"]):
+        return "bold"
+    if any(w in motif_lower for w in ["gradient", "flow", "wave"]):
+        return "gradient"
+    return "elegant"
+
+
 def _build_gamma_prompt() -> str:
-    """Assemble a full Gamma generation prompt with brand tokens and card structure."""
+    """Assemble a Gamma generation prompt structured exactly like manual generation."""
     from src.config_store import load as config_load
 
     deck_spec = st.session_state.deck_spec or {}
-    dossier = st.session_state.dossier or ""
 
     try:
         brand_tokens = config_load("brand_tokens")
@@ -479,31 +785,30 @@ def _build_gamma_prompt() -> str:
     roadmap = deck_spec.get("roadmap") or []
     grapevine = deck_spec.get("grapevine") or []
 
-    # ── Brand identity block ──────────────────────────────────────────────────
     palette = brand_tokens.get("palette") or {}
     typography = brand_tokens.get("type") or {}
     brand_rules = brand_tokens.get("rules", "")
     motif = brand_tokens.get("motif", "")
 
+    display_font = typography.get("display", "Georgia") if isinstance(typography, dict) else "Georgia"
+    body_font = typography.get("body", "Calibri") if isinstance(typography, dict) else "Calibri"
+    visual_style = motif or "premium editorial"
+    if brand_rules:
+        visual_style += f". {brand_rules[:250]}"
+
+    # Infer closest Gamma theme
+    gamma_theme = _infer_gamma_theme(palette, motif)
+
+    # Build readable color block
     color_lines = []
     for role, val in palette.items():
         if isinstance(val, dict):
-            hex_val = val.get("hex", "")
-            role_desc = val.get("role", role)
-            why = val.get("why", "")
-            color_lines.append(f"  - #{hex_val} ({role_desc}){': ' + why if why else ''}")
-        else:
-            color_lines.append(f"  - {role}: {val}")
+            h = val.get("hex", "")
+            r = val.get("role", role)
+            color_lines.append(f"#{h} = {r}")
+    color_summary = " / ".join(color_lines) if color_lines else "no palette"
 
-    display_font = typography.get("display", "Georgia") if isinstance(typography, dict) else "Georgia"
-    body_font = typography.get("body", "Calibri") if isinstance(typography, dict) else "Calibri"
-
-    # Build visual style from motif + brand rules
-    visual_style = motif or "premium editorial"
-    if brand_rules:
-        visual_style += f". {brand_rules[:300]}"
-
-    # ── Vocabulary swap dict for inline use ───────────────────────────────────
+    # Vocab map
     vocab_map = {}
     for v in vocab:
         k = v.get("from", v.get("from_", ""))
@@ -511,179 +816,119 @@ def _build_gamma_prompt() -> str:
         if k and t:
             vocab_map[k] = t
 
-    def apply_vocab(text: str) -> str:
+    def av(text: str) -> str:
         for k, v in vocab_map.items():
             text = text.replace(k, v)
         return text
 
-    # ── SWOT reframed (not raw quadrant) ─────────────────────────────────────
     strengths = swot.get("strengths") or []
     weaknesses = swot.get("weaknesses") or []
     opportunities = swot.get("opportunities") or []
     threats = swot.get("threats") or []
-    gaps = weaknesses + threats  # merge into "strategic gaps"
+    gaps = weaknesses + threats
 
-    # ── Card-by-card structure ────────────────────────────────────────────────
-    cards = []
+    # ── Build slide content exactly as I write it manually ─────────────────────
+    slides: list[str] = []
 
-    # Card 1 — Cover
-    cards.append(f"""---CARD: Cover---
-Title: {product}
-Subtitle: {taglines.get('punchy', taglines.get('visionary', ''))}
-Visual: full-bleed hero image, style: {visual_style}""")
+    slides.append(f"# {product}\n{av(taglines.get('punchy', taglines.get('visionary', '')))}")
 
-    # Card 2 — The Hook (outcome tagline)
     if taglines.get("outcome"):
-        cards.append(f"""---CARD: The Hook---
-Headline: {apply_vocab(taglines['outcome'])}
-Body: {apply_vocab(micro or elevator[:200])}
-Visual: abstract mood image evoking transformation, style: {visual_style}""")
+        slides.append(f"# {av(taglines['outcome'])}\n{av(micro or elevator[:250])}")
 
-    # Card 3 — The Problem (legacy)
     if legacy:
-        legacy_text = "\n".join(f"- {apply_vocab(l)}" for l in legacy[:4])
-        cards.append(f"""---CARD: The Old Playbook (What Broke)---
-Headline: The world changed. The playbook didn't.
-Body:
-{legacy_text}
-Visual: muted, desaturated image suggesting stagnation or complexity""")
+        legacy_pts = "\n".join(f"- {av(l)}" for l in legacy[:5])
+        slides.append(f"# The world changed. The playbook didn't.\n{legacy_pts}")
 
-    # Card 4 — The Shift (evolution)
     if evolution:
-        evo_text = "\n".join(f"- {apply_vocab(e)}" for e in evolution[:4])
-        cards.append(f"""---CARD: The New Operating System---
-Headline: {apply_vocab(taglines.get('visionary', 'The shift has already happened.'))}
-Body:
-{evo_text}
-Visual: bold, bright, forward-motion image, style: {visual_style}""")
+        evo_pts = "\n".join(f"- {av(e)}" for e in evolution[:5])
+        slides.append(f"# {av(taglines.get('visionary', 'The shift has already happened.'))}\n{evo_pts}")
 
-    # Card 5 — Elevator pitch
     if elevator:
-        cards.append(f"""---CARD: What It Is---
-Headline: {apply_vocab(product)} in one paragraph
-Body: {apply_vocab(elevator)}
-Visual: clean product/platform illustration or icon grid""")
+        slides.append(f"# {av(product)}\n{av(elevator)}")
 
-    # Card 6 — Core metaphor
     if metaphor.get("statement"):
-        cards.append(f"""---CARD: The Core Metaphor---
-Headline: {apply_vocab(metaphor['statement'])}
-Body: {apply_vocab(metaphor.get('rationale', ''))}
-Visual: image literalising the metaphor, style: {visual_style}""")
+        slides.append(f"# {av(metaphor['statement'])}\n{av(metaphor.get('rationale', ''))}")
 
-    # Card 7 — Metrics
     if metrics:
-        metric_lines = "\n".join(f"- **{m.get('num','')}** — {apply_vocab(m.get('label',''))}" for m in metrics)
-        cards.append(f"""---CARD: The Numbers That Matter---
-Headline: Proof, not promise.
-Body:
-{metric_lines}
-Visual: data-driven graphic or large-number typographic layout""")
+        m_lines = "\n".join(f"- **{m.get('num','')}** — {av(m.get('label',''))}" for m in metrics)
+        slides.append(f"# Proof, not promise.\n{m_lines}")
 
-    # Card 8 — Proprietary moat (strengths reframed)
     if strengths:
-        moat_text = "\n".join(f"- {apply_vocab(s)}" for s in strengths[:4])
-        cards.append(f"""---CARD: The Proprietary Moat---
-Headline: What no one else can replicate.
-Body:
-{moat_text}
-Visual: fortress or precision-craft image, style: {visual_style}""")
+        s_lines = "\n".join(f"- {av(s)}" for s in strengths[:5])
+        slides.append(f"# What no one else can replicate.\n{s_lines}")
 
-    # Card 9 — Strategic gaps (weaknesses+threats reframed as investment thesis)
     if gaps:
-        gaps_text = "\n".join(f"- {apply_vocab(g)}" for g in gaps[:4])
-        cards.append(f"""---CARD: Strategic Gaps — Why They Make the Case---
-Headline: The gaps that justify the investment.
-Body: These are not liabilities. They are the whitespace this roadmap is built to close.
-{gaps_text}
-Visual: tension/contrast image — light breaking through""")
+        g_lines = "\n".join(f"- {av(g)}" for g in gaps[:5])
+        slides.append(f"# The gaps that justify the investment.\nThese are not liabilities — they are the whitespace this roadmap is built to close.\n{g_lines}")
 
-    # Card 10 — Opportunity (from SWOT)
     if opportunities:
-        opp_text = "\n".join(f"- {apply_vocab(o)}" for o in opportunities[:4])
-        cards.append(f"""---CARD: The Opportunity Window---
-Headline: The market is ready. The timing is now.
-Body:
-{opp_text}
-Visual: open horizon or expansive landscape, style: {visual_style}""")
+        o_lines = "\n".join(f"- {av(o)}" for o in opportunities[:5])
+        slides.append(f"# The market is ready. The timing is now.\n{o_lines}")
 
-    # Card 11 — Social proof / grapevine
     if grapevine:
-        proof_text = "\n".join(f'> "{apply_vocab(g["desc"])}" — {g["title"]}' for g in grapevine[:3])
-        cards.append(f"""---CARD: What the Market Is Already Saying---
-Headline: The signal is there.
-Body:
-{proof_text}
-Visual: subtle editorial collage or quote typography""")
+        q_lines = "\n".join(f'> "{av(g["desc"])}" — {g["title"]}' for g in grapevine[:3])
+        slides.append(f"# The signal is there.\n{q_lines}")
 
-    # Cards 12–N — Roadmap (one card per phase)
     for r in roadmap:
-        pts = "\n".join(f"- {apply_vocab(pt)}" for pt in r.get("points", [])[:4])
-        cards.append(f"""---CARD: {r.get('phase','')} — {apply_vocab(r.get('name',''))} ({r.get('when','')})---
-Body:
-{pts}
-Visual: timeline or progress graphic""")
+        pts = "\n".join(f"- {av(pt)}" for pt in r.get("points", [])[:5])
+        slides.append(f"# {r.get('phase','')} — {av(r.get('name',''))} · {r.get('when','')}\n{pts}")
 
-    # Card — Manifesto
     if manifesto:
-        cards.append(f"""---CARD: Manifesto---
-Headline: We believe.
-Body: {apply_vocab(manifesto[:600])}
-Visual: full-bleed typographic statement, style: {visual_style}""")
+        slides.append(f"# We believe.\n{av(manifesto[:700])}")
 
-    # Card — Closing
-    cards.append(f"""---CARD: Closing---
-Headline: {apply_vocab(taglines.get('visionary', product))}
-Subhead: {apply_vocab(taglines.get('punchy', ''))}
-CTA: Let's build it together.
-Visual: full-bleed closing image, style: {visual_style}""")
+    slides.append(f"# {av(taglines.get('visionary', product))}\n{av(taglines.get('punchy', ''))}\n\nLet's build it together.")
 
-    # ── Assemble full prompt ──────────────────────────────────────────────────
-    vocab_swap_lines = "\n".join(f"  {k} → {v}" for k, v in vocab_map.items())
+    deck_content = "\n\n---\n\n".join(slides)
+
+    vocab_lines = "\n".join(f"- {k} → {v}" for k, v in vocab_map.items())
     pillar_lines = "\n".join(
-        f"  - {p.get('name','')}: SAY «{p.get('do_say','')}» / NEVER SAY «{p.get('dont_say','')}»"
+        f"- **{p.get('name','')}**: say «{p.get('do_say','')}», never «{p.get('dont_say','')}»"
         for p in pillars
     )
-    color_block = "\n".join(color_lines) if color_lines else "  (no palette defined)"
-    cards_block = "\n\n".join(cards)
 
-    prompt = f"""Generate a Gamma presentation for: {product}
+    prompt = f"""Generate a Gamma presentation using the `generate` tool.
 
-Use the `generate` tool (mcp__e2a76a26-c84d-46b0-a627-996cea47643c__generate).
+**Product:** {product}
+**Total slides:** {len(slides)} (use exactly these --- breaks as card boundaries; set cardSplit to inputTextBreaks)
 
-═══════════════════════════════════════
-BRAND IDENTITY — apply to every card
-═══════════════════════════════════════
-Primary font (display/titles): {display_font}
-Body font: {body_font}
-Color palette:
-{color_block}
-Visual motif / image style: {visual_style}
+---
 
-VOCABULARY — always use these terms (never the legacy term):
-{vocab_swap_lines if vocab_swap_lines else "  (none defined)"}
+## THEME & VISUAL IDENTITY
 
-TONE PILLARS — follow strictly:
-{pillar_lines if pillar_lines else "  (none defined)"}
+**Gamma theme to use:** `{gamma_theme}`
+(This is the closest match to the brand palette: {color_summary})
 
-═══════════════════════════════════════
-DECK STRUCTURE — one card per section
-Use explicit card breaks so Gamma renders each as a separate slide.
-═══════════════════════════════════════
+**Custom image style:** {visual_style}
+Use this as the `imageOptions.style` parameter — do NOT use a named stylePreset, use `custom` with this style string.
 
-{cards_block}
+**Typography:** display = {display_font} / body = {body_font}
 
-═══════════════════════════════════════
-GENERATION RULES
-═══════════════════════════════════════
-- Each ---CARD--- block = one Gamma card/slide. Do not merge cards.
-- Apply brand colors to backgrounds and accents throughout.
-- Use {display_font} for all headlines, {body_font} for body text.
-- Generate images using the custom style: {visual_style}
-- Do NOT use generic stock-photo presets — use the custom image style above.
-- Apply vocabulary swaps everywhere (including image prompts and alt text).
-- Keep tone pillars in mind for every word choice.
-- The SWOT is reframed (moat + strategic gaps + opportunity), not a raw 4-quadrant grid.
+---
+
+## BRAND VOCABULARY (apply everywhere — headlines, body, image prompts)
+{vocab_lines if vocab_lines else "(none)"}
+
+## TONE PILLARS
+{pillar_lines if pillar_lines else "(none)"}
+
+---
+
+## DECK CONTENT
+(Each --- separator = one new card. Pass this as inputText with cardSplit: inputTextBreaks)
+
+{deck_content}
+
+---
+
+## GENERATION INSTRUCTIONS
+- Use `cardSplit: inputTextBreaks` so each --- becomes a separate card
+- Theme: `{gamma_theme}` — apply consistently across all cards
+- Image style: custom / `{visual_style[:120]}`
+- Apply vocabulary swaps in every text element including image prompts
+- SWOT is reframed as moat (strengths) + gaps (weaknesses+threats merged) + opportunity — not a 4-quadrant grid
+- One roadmap card per phase so each has room to breathe
+- Manifesto card: large typographic treatment, minimal imagery
+- Closing card: full-bleed, strong visual, CTA prominent
 """
     return prompt
 
@@ -1307,9 +1552,56 @@ def tab_cycle_report():
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def _clear_session():
+    """Wipe all pipeline data from session and disk."""
+    import shutil
+    keys_to_clear = [
+        "corpus", "signal_map", "research_plan", "evidence_cards",
+        "dossier", "deck_spec", "proposed_tokens", "run_dir",
+        "gamma_prompt", "cycle_report_md",
+    ]
+    for k in keys_to_clear:
+        st.session_state[k] = None
+    # Reset metrics
+    st.session_state.cycle_metrics = {
+        "session_start": datetime.utcnow().isoformat(),
+        "stages": {},
+        "llm_calls": [],
+        "web_searches": [],
+        "docs_ingested": 0,
+        "corpus_chars": 0,
+        "questions_derived": 0,
+        "evidence_cards_collected": 0,
+        "dossier_chars": 0,
+        "outputs_generated": [],
+    }
+    # Delete run artifacts from disk
+    try:
+        if RUNS_DIR.exists():
+            shutil.rmtree(RUNS_DIR)
+            RUNS_DIR.mkdir(exist_ok=True)
+    except Exception:
+        pass
+
+
 def main():
-    st.title("🧭 Perception Engine")
-    st.caption("Internal brand-intelligence pipeline · Ingest → OBSERVE → DERIVE → RESEARCH → SYNTHESIZE → DISTILL")
+    col_title, col_clear = st.columns([8, 1])
+    with col_title:
+        st.title("🧭 Perception Engine")
+        st.caption("Brand-intelligence pipeline · OBSERVE → DERIVE → RESEARCH → SYNTHESIZE → DISTILL")
+    with col_clear:
+        st.markdown("<div style='padding-top:1.4rem'></div>", unsafe_allow_html=True)
+        if st.button("Clear session", key="btn_clear_session", help="Efface toutes les données de la session et du disque"):
+            _clear_session()
+            st.success("Session effacée.")
+            st.rerun()
+
+    # Confidentiality notice
+    st.markdown("""
+<div style='background:#fff3cd;border-radius:12px;padding:0.6rem 1.1rem;margin-bottom:1rem;font-size:0.8rem;color:#856404;border:1px solid #ffc107;'>
+🔒 <strong>Confidentialité</strong> — Les données uploadées restent dans cette session Streamlit et sont supprimées à sa fermeture. Elles ne sont jamais stockées de façon permanente côté serveur. Utilisez le bouton <em>Clear session</em> pour effacer immédiatement.
+</div>
+""", unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["Run", "Prompt Studio", "Brand Studio", "Deck Studio", "Cycle Report"])
 
