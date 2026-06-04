@@ -349,15 +349,16 @@ def _init_state():
         # Cycle metrics
         "cycle_metrics": {
             "session_start": datetime.utcnow().isoformat(),
-            "stages": {},       # stage -> {start, end, duration_s, success, error}
-            "llm_calls": [],    # [{stage, model, input_tokens, output_tokens, cost_usd, ts}]
-            "web_searches": [], # [{stage, query, ts}]
+            "stages": {},
+            "llm_calls": [],
+            "web_searches": [],
             "docs_ingested": 0,
             "corpus_chars": 0,
             "questions_derived": 0,
             "evidence_cards_collected": 0,
             "dossier_chars": 0,
-            "outputs_generated": [],  # ["pptx", "gamma_prompt", "dossier"]
+            "outputs_generated": [],
+            "signal_map_snapshot": None,
         },
     }
     for k, v in defaults.items():
@@ -489,6 +490,8 @@ def tab_run():
                 _save_artifact("corpus.json", corpus)
                 _metrics()["docs_ingested"] = len(uploaded_files)
                 _metrics()["corpus_chars"] = sum(len(c.get("text", "")) for c in corpus)
+                # snapshot for cycle report (survives page reload)
+                _metrics()["signal_map_snapshot"] = None  # will be set after observe
 
                 from src.observe import run_observe
                 with st.spinner("Running OBSERVE…"):
@@ -496,6 +499,7 @@ def tab_run():
 
                 st.session_state.signal_map = signal_map
                 _save_artifact("signal_map.json", signal_map)
+                _metrics()["signal_map_snapshot"] = signal_map
                 _stage_end("observe", success=True)
                 st.success("OBSERVE complete.")
             except Exception as e:
@@ -564,6 +568,13 @@ def tab_run():
     st.subheader("Step 3 · RESEARCH")
     st.caption(f"Prompt: `prompts/research.md` · Model: `{models['research']}`")
 
+    # Security note before RESEARCH
+    st.markdown("""
+<div style='background:#0a1520;border-radius:10px;padding:0.6rem 1.1rem;margin-bottom:0.8rem;font-size:0.8rem;color:#b0c4de;border:1px solid #1a3040;'>
+🛡️ <strong style="color:#d0e0f0;">Sécurité recherche web</strong> — Les requêtes envoyées au moteur de recherche ne contiennent jamais le nom du produit ni aucune donnée interne. Le nom du produit est remplacé par un terme générique avant chaque recherche.
+</div>
+""", unsafe_allow_html=True)
+
     if st.button("Run RESEARCH", key="btn_research"):
         if not st.session_state.research_plan:
             st.error("Run DERIVE first.")
@@ -572,9 +583,12 @@ def tab_run():
             try:
                 from src.research import run_research
                 questions = st.session_state.research_plan.get("questions", [])
+                # Extract product name for query sanitization
+                product_name = (st.session_state.signal_map or {}).get("product_name", "")
                 progress = st.progress(0)
                 cards_all: list[dict] = []
                 search_log_all: list[dict] = []
+                qa_pairs_all: list[dict] = []
 
                 live_container = st.container()
                 with live_container:
@@ -587,7 +601,8 @@ def tab_run():
                     for ev in search_events:
                         q = ev.get("query", "")
                         n = len(ev.get("results", []))
-                        live_lines.append(f"🔍 **{q}** — {n} résultats")
+                        flag = " 🛡️" if ev.get("_sanitized") else ""
+                        live_lines.append(f"🔍 **{q}**{flag} — {n} résultats")
                         _metrics()["web_searches"].append({
                             "stage": "research",
                             "query": q,
@@ -602,14 +617,16 @@ def tab_run():
                             partial_plan,
                             model=models["research"],
                             progress_cb=_on_question_done,
+                            product_name=product_name,
                         )
                         cards_all.extend(result.get("cards", []))
                         search_log_all.extend(result.get("search_log", []))
+                        qa_pairs_all.extend(result.get("qa_pairs", []))
                     progress.progress((i + 1) / len(questions))
 
                 live_placeholder.empty()
 
-                evidence_cards = {"cards": cards_all, "search_log": search_log_all}
+                evidence_cards = {"cards": cards_all, "search_log": search_log_all, "qa_pairs": qa_pairs_all}
                 st.session_state.evidence_cards = evidence_cards
                 _save_artifact("evidence_cards.json", evidence_cards)
                 _metrics()["evidence_cards_collected"] = len([c for c in cards_all if not c.get("_raw_source")])
@@ -623,17 +640,70 @@ def tab_run():
     if st.session_state.evidence_cards:
         cards = st.session_state.evidence_cards.get("cards", [])
         search_log = st.session_state.evidence_cards.get("search_log", [])
+        qa_pairs = st.session_state.evidence_cards.get("qa_pairs", [])
 
         if cards:
             import pandas as pd
 
-            # Synthesised cards (not raw source entries)
             synth_cards = [c for c in cards if not c.get("_raw_source")]
+            n_sanitized = sum(1 for e in search_log if e.get("sanitized"))
 
-            st.markdown(f"**{len(synth_cards)} evidence cards** · {len(search_log)} requêtes web")
+            st.markdown(
+                f"**{len(synth_cards)} evidence cards** · {len(search_log)} requêtes web"
+                + (f" · 🛡️ {n_sanitized} requêtes sanitisées" if n_sanitized else "")
+            )
 
-            # Cards table
-            with st.expander("Evidence cards", expanded=True):
+            # ── Q&A view — question + réponses structurées ────────────────────
+            dim_order = ["market", "technology", "narrative", "regulatory", "adoption", "validation"]
+            dim_colors = {
+                "market": "#e8d5a0", "technology": "#b0c4de", "narrative": "#c8b0de",
+                "regulatory": "#f0b0a0", "adoption": "#b0d4b0", "validation": "#d4c8b0",
+            }
+
+            with st.expander("📋 Questions & Réponses par dimension", expanded=True):
+                # Group qa_pairs by dimension
+                by_dim: dict = {}
+                for qa in qa_pairs:
+                    d = qa.get("dimension", "market")
+                    by_dim.setdefault(d, []).append(qa)
+
+                for dim in dim_order:
+                    qas = by_dim.get(dim, [])
+                    if not qas:
+                        continue
+                    color = dim_colors.get(dim, "#e8d5a0")
+                    st.markdown(
+                        f"<span style='background:{color}22;color:{color};padding:2px 10px;"
+                        f"border-radius:6px;font-size:0.75rem;font-weight:600;letter-spacing:0.06em;"
+                        f"text-transform:uppercase'>{dim}</span>",
+                        unsafe_allow_html=True,
+                    )
+                    for qa in qas:
+                        with st.expander(f"Q · {qa.get('question', '')}", expanded=False):
+                            queries = qa.get("queries_fired", [])
+                            if queries:
+                                st.caption("Requêtes web : " + " · ".join(f"`{q}`" for q in queries))
+                            qa_cards = qa.get("cards", [])
+                            if qa_cards:
+                                for c in qa_cards:
+                                    url = c.get("url", "")
+                                    src = c.get("source_title", "")
+                                    claim = c.get("claim", "")
+                                    relevance = c.get("relevance", "")
+                                    tag = c.get("tag", "")
+                                    src_link = f"[{src}]({url})" if url else src
+                                    st.markdown(
+                                        f"**{c.get('id','')}** · {src_link}  \n"
+                                        f"{claim}"
+                                        + (f"  \n*{relevance}*" if relevance else ""),
+                                    )
+                                    st.caption(f"Tag: {tag} · Dimension: {c.get('dimension','')}")
+                                    st.divider()
+                            else:
+                                st.caption("Aucune evidence card pour cette question.")
+
+            # ── All cards flat table ──────────────────────────────────────────
+            with st.expander("Toutes les evidence cards (tableau)"):
                 df = pd.DataFrame([
                     {
                         "ID": c.get("id", ""),
@@ -646,24 +716,6 @@ def tab_run():
                     for c in synth_cards
                 ])
                 st.dataframe(df, use_container_width=True, hide_index=True)
-
-            # Sources by question
-            if search_log:
-                with st.expander("🔍 Recherches web & sources brutes"):
-                    for entry in search_log:
-                        st.markdown(f"**Q · {entry.get('question','')[:80]}**")
-                        st.caption(f"Requête : `{entry.get('query','')}`")
-                        results = entry.get("results", [])
-                        if results:
-                            for r in results:
-                                url = r.get("url", "")
-                                title = r.get("title", url)
-                                snippet = r.get("snippet", "")
-                                st.markdown(
-                                    f"- [{title}]({url})" + (f"  \n  *{snippet[:150]}…*" if snippet else ""),
-                                    unsafe_allow_html=False,
-                                )
-                        st.divider()
 
     # ── SYNTHESIZE ───────────────────────────────────────────────────────────
     st.divider()
@@ -1514,8 +1566,8 @@ def _build_cycle_report() -> str:
         lines.append("- (none yet)")
     lines.append("")
 
-    # Signal map summary
-    sm = st.session_state.get("signal_map") or {}
+    # Signal map summary — read from metrics snapshot (survives reload)
+    sm = m.get("signal_map_snapshot") or st.session_state.get("signal_map") or {}
     if sm:
         lines += [
             "---",
@@ -1529,8 +1581,43 @@ def _build_cycle_report() -> str:
             f"- **Metrics captured:** {len(sm.get('metrics', []))}",
             f"- **Tensions identified:** {len(sm.get('tensions', []))}",
             f"- **Catalysts identified:** {len(sm.get('catalysts', []))}",
+            f"- **Strategic intent:** {sm.get('strategic_intent', '')}",
             "",
         ]
+
+    # Q&A research log
+    ec = st.session_state.get("evidence_cards") or {}
+    qa_pairs = ec.get("qa_pairs", [])
+    if qa_pairs:
+        lines += [
+            "---",
+            "",
+            "## Research Q&A Log",
+            "",
+        ]
+        for qa in qa_pairs:
+            lines += [
+                f"### {qa.get('question_id','')} · [{qa.get('dimension','')}] {qa.get('question','')}",
+                "",
+            ]
+            queries = qa.get("queries_fired", [])
+            if queries:
+                lines.append(f"**Queries fired:** {' · '.join(f'`{q}`' for q in queries)}")
+                lines.append("")
+            qa_cards = qa.get("cards", [])
+            if qa_cards:
+                lines.append(f"**{len(qa_cards)} evidence cards:**")
+                lines.append("")
+                for c in qa_cards:
+                    url = c.get("url", "")
+                    src = c.get("source_title", "")
+                    src_link = f"[{src}]({url})" if url else src
+                    lines.append(f"- **{c.get('id','')}** · {src_link}: {c.get('claim','')}")
+                    if c.get("relevance"):
+                        lines.append(f"  *{c['relevance']}*")
+            else:
+                lines.append("*No evidence cards collected for this question.*")
+            lines.append("")
 
     # Deck spec summary
     ds = st.session_state.get("deck_spec") or {}

@@ -78,6 +78,28 @@ class ResearchPlan(BaseModel):
     model_config = {"extra": "ignore"}
     questions: list[ResearchQuestion] = Field(default_factory=list)
 
+    @classmethod
+    def model_validate(cls, obj, *, strict=None, from_attributes=None, context=None):
+        if isinstance(obj, dict):
+            # Alias: research_questions / plan / items → questions
+            for alt in ("research_questions", "research_plan", "plan", "items", "research"):
+                if alt in obj and "questions" not in obj:
+                    val = obj[alt]
+                    # unwrap nested {"questions": [...]}
+                    if isinstance(val, dict) and "questions" in val:
+                        val = val["questions"]
+                    obj = {**obj, "questions": val}
+                    break
+            # If top-level is a list of questions
+        elif isinstance(obj, list):
+            obj = {"questions": obj}
+        qs = obj.get("questions", []) if isinstance(obj, dict) else []
+        # Ensure each question is a dict
+        if isinstance(qs, dict):
+            # {"Q1": {...}, "Q2": {...}}
+            obj = {**obj, "questions": [{"id": k, **v} if isinstance(v, dict) else {"id": k, "question": str(v)} for k, v in qs.items()]}
+        return super().model_validate(obj, strict=strict, from_attributes=from_attributes, context=context)
+
 
 class EvidenceCard(BaseModel):
     model_config = {"extra": "ignore"}
