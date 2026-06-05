@@ -896,17 +896,75 @@ def _build_gamma_prompt() -> str:
 
     display_font = typography.get("display", "Georgia") if isinstance(typography, dict) else "Georgia"
     body_font = typography.get("body", "Calibri") if isinstance(typography, dict) else "Calibri"
-    # Fixed high-quality neon image style — overrides motif/brand_rules for Gamma
+
+    # ── Derive neon colors from brand palette ─────────────────────────────────
+    # Classify palette entries by luminance to pick structure vs accent colors
+    def _lum(h: str) -> float:
+        try:
+            h = h.lstrip("#")
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        except Exception:
+            return 0.5
+
+    palette_entries = [
+        (role, val.get("hex", ""), val.get("role", role), val.get("why", ""))
+        for role, val in palette.items()
+        if isinstance(val, dict) and val.get("hex")
+    ]
+    # Sort by luminance: darkest = background, mid = structure, brightest = accent
+    palette_entries.sort(key=lambda x: _lum(x[1]))
+
+    if len(palette_entries) >= 3:
+        bg_name = palette_entries[0][2] or palette_entries[0][0]
+        structure_name = palette_entries[len(palette_entries) // 2][2] or palette_entries[len(palette_entries) // 2][0]
+        accent_name = palette_entries[-1][2] or palette_entries[-1][0]
+        structure_hex = "#" + palette_entries[len(palette_entries) // 2][1]
+        accent_hex = "#" + palette_entries[-1][1]
+        color_desc = (
+            f"Fine emissive lines in {structure_name} ({structure_hex}) bloom and flare against the darkness, "
+            f"with subtle iridescent gradients shimmering at the edges. "
+            f"{accent_name} ({accent_hex}) reserved for singular focal points — the brightest node, "
+            f"the sharpest arc, the one headline that demands attention."
+        )
+        dominance_desc = (
+            f"Near-black dominates the surface; {structure_name} gives structure; "
+            f"{accent_name} used sparingly for maximum contrast."
+        )
+    elif len(palette_entries) == 2:
+        structure_name = palette_entries[0][2] or palette_entries[0][0]
+        accent_name = palette_entries[1][2] or palette_entries[1][0]
+        accent_hex = "#" + palette_entries[1][1]
+        color_desc = (
+            f"Fine emissive lines in {structure_name} bloom against the darkness. "
+            f"{accent_name} ({accent_hex}) reserved for singular focal points."
+        )
+        dominance_desc = f"Near-black dominates; {accent_name} used sparingly."
+    elif len(palette_entries) == 1:
+        accent_name = palette_entries[0][2] or palette_entries[0][0]
+        accent_hex = "#" + palette_entries[0][1]
+        color_desc = f"Fine emissive lines in {accent_name} ({accent_hex}) bloom against the darkness."
+        dominance_desc = f"Near-black dominates; {accent_name} provides all light."
+    else:
+        # Fallback if no palette defined
+        color_desc = (
+            "Fine emissive lines in electric jade-teal and radiant amber-gold bloom and flare against the darkness, "
+            "with subtle iridescent gradients shimmering at the edges."
+        )
+        dominance_desc = "Near-black dominates the surface; jade-teal gives structure; amber-gold reserved for singular focal points."
+
+    # Motif enriches the abstract imagery description
+    motif_clause = f" {motif}." if motif else ""
+
     visual_style = (
-        "Abstract, non-figurative, dynamic and futuristic. "
+        f"Abstract, non-figurative, dynamic and futuristic.{motif_clause} "
         "Luminous neon light emitted against a deep near-black field — glowing arcs, "
         "sweeping light trails and constellations of bright pulsing nodes, alive with energy and motion. "
-        "Fine emissive lines in electric jade-teal and radiant amber-gold bloom and flare against the darkness, "
-        "with subtle iridescent gradients shimmering at the edges. "
+        f"{color_desc} "
         "Glowing circuitry and luminous data-ring motifs suggest an invisible territory mapped in real time. "
         "High contrast, high colour saturation, cinematic depth of field, soft light bloom, "
-        "delicate bokeh, crisp luminous edges, ultra-detailed, high resolution, premium and contemporary. "
-        "Near-black dominates the surface; jade-teal gives structure; amber-gold reserved for singular focal points."
+        f"delicate bokeh, crisp luminous edges, ultra-detailed, high resolution, premium and contemporary. "
+        f"{dominance_desc}"
     )
     visual_style_negative = (
         "Never flat, never matte, never dusty, never beige. "
