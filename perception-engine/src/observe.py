@@ -31,9 +31,5 @@ def run_observe(corpus: list[dict], model: str | None = None) -> dict:
             if isinstance(raw.get(field), str):
                 raw[field] = [raw[field]] if raw[field] else []
 
-    try:
-        validated = SignalMap(**raw)
-    except Exception:
-        # Last resort: return raw dict with defaults merged in
-        validated = SignalMap.model_validate(raw, strict=False)
+    validated = SignalMap.model_validate(raw)
     return validated.model_dump()

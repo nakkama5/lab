@@ -898,7 +898,8 @@ def _build_gamma_prompt() -> str:
     body_font = typography.get("body", "Calibri") if isinstance(typography, dict) else "Calibri"
 
     # ── Derive neon colors from brand palette ─────────────────────────────────
-    # Classify palette entries by luminance to pick structure vs accent colors
+    # Brand colors are always transcribed into their most VIVID/EMISSIVE form.
+    # Never inject muted or matte colors — always push to luminous neon equivalent.
     def _lum(h: str) -> float:
         try:
             h = h.lstrip("#")
@@ -907,68 +908,76 @@ def _build_gamma_prompt() -> str:
         except Exception:
             return 0.5
 
+    def _neon_prefix(hex_color: str) -> str:
+        """Map a hex color to a vivid emissive descriptor based on hue."""
+        try:
+            h = hex_color.lstrip("#")
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            mx = max(r, g, b)
+            if mx == 0:
+                return "electric white"
+            # Hue approximation
+            if r >= mx and r > g and r > b:
+                return "incandescent ember-red" if g < 80 else "radiant amber-orange"
+            if g >= mx and g > r and g > b:
+                return "electric jade-green" if b > 80 else "luminous acid-green"
+            if b >= mx and b > r and b > g:
+                return "electric cobalt-blue" if r > 80 else "radiant violet-indigo"
+            if r >= mx and g >= mx and r > b and g > b:
+                return "radiant amber-gold"
+            if r >= mx and b >= mx and r > g and b > g:
+                return "electric magenta-rose"
+            if g >= mx and b >= mx and g > r and b > r:
+                return "electric jade-teal"
+            return "luminous white-gold"
+        except Exception:
+            return "radiant amber-gold"
+
     palette_entries = [
-        (role, val.get("hex", ""), val.get("role", role), val.get("why", ""))
+        (role, val.get("hex", ""), val.get("role", role))
         for role, val in palette.items()
         if isinstance(val, dict) and val.get("hex")
     ]
-    # Sort by luminance: darkest = background, mid = structure, brightest = accent
     palette_entries.sort(key=lambda x: _lum(x[1]))
 
-    if len(palette_entries) >= 3:
-        bg_name = palette_entries[0][2] or palette_entries[0][0]
-        structure_name = palette_entries[len(palette_entries) // 2][2] or palette_entries[len(palette_entries) // 2][0]
-        accent_name = palette_entries[-1][2] or palette_entries[-1][0]
-        structure_hex = "#" + palette_entries[len(palette_entries) // 2][1]
-        accent_hex = "#" + palette_entries[-1][1]
+    if len(palette_entries) >= 2:
+        mid = len(palette_entries) // 2
+        structure_neon = _neon_prefix(palette_entries[mid][1])
+        accent_neon = _neon_prefix(palette_entries[-1][1])
         color_desc = (
-            f"Fine emissive lines in {structure_name} ({structure_hex}) bloom and flare against the darkness, "
+            f"Fine emissive lines in {structure_neon} bloom and flare against the darkness, "
             f"with subtle iridescent gradients shimmering at the edges. "
-            f"{accent_name} ({accent_hex}) reserved for singular focal points — the brightest node, "
+            f"{accent_neon.capitalize()} light reserved for singular focal points — the brightest node, "
             f"the sharpest arc, the one headline that demands attention."
         )
         dominance_desc = (
-            f"Near-black dominates the surface; {structure_name} gives structure; "
-            f"{accent_name} used sparingly for maximum contrast."
+            f"Near-black dominates the surface; {structure_neon} gives structure; "
+            f"{accent_neon} used sparingly for maximum contrast."
         )
-    elif len(palette_entries) == 2:
-        structure_name = palette_entries[0][2] or palette_entries[0][0]
-        accent_name = palette_entries[1][2] or palette_entries[1][0]
-        accent_hex = "#" + palette_entries[1][1]
-        color_desc = (
-            f"Fine emissive lines in {structure_name} bloom against the darkness. "
-            f"{accent_name} ({accent_hex}) reserved for singular focal points."
-        )
-        dominance_desc = f"Near-black dominates; {accent_name} used sparingly."
     elif len(palette_entries) == 1:
-        accent_name = palette_entries[0][2] or palette_entries[0][0]
-        accent_hex = "#" + palette_entries[0][1]
-        color_desc = f"Fine emissive lines in {accent_name} ({accent_hex}) bloom against the darkness."
-        dominance_desc = f"Near-black dominates; {accent_name} provides all light."
+        accent_neon = _neon_prefix(palette_entries[0][1])
+        color_desc = f"Fine emissive lines in {accent_neon} bloom and pulse against the darkness."
+        dominance_desc = f"Near-black dominates; {accent_neon} provides all light."
     else:
-        # Fallback if no palette defined
         color_desc = (
             "Fine emissive lines in electric jade-teal and radiant amber-gold bloom and flare against the darkness, "
             "with subtle iridescent gradients shimmering at the edges."
         )
         dominance_desc = "Near-black dominates the surface; jade-teal gives structure; amber-gold reserved for singular focal points."
 
-    # Motif enriches the abstract imagery description
-    motif_clause = f" {motif}." if motif else ""
-
     visual_style = (
-        f"Abstract, non-figurative, dynamic and futuristic.{motif_clause} "
+        "Abstract, non-figurative, dynamic and futuristic. "
         "Luminous neon light emitted against a deep near-black field — glowing arcs, "
         "sweeping light trails and constellations of bright pulsing nodes, alive with energy and motion. "
         f"{color_desc} "
-        "Glowing circuitry and luminous data-ring motifs suggest an invisible territory mapped in real time. "
+        "Glowing circuitry and luminous data-ring motifs suggest an invisible force-field mapped in real time. "
         "High contrast, high colour saturation, cinematic depth of field, soft light bloom, "
-        f"delicate bokeh, crisp luminous edges, ultra-detailed, high resolution, premium and contemporary. "
+        "delicate bokeh, crisp luminous edges, ultra-detailed, high resolution, premium and contemporary. "
         f"{dominance_desc}"
     )
     visual_style_negative = (
-        "Never flat, never matte, never dusty, never beige. "
-        "No figuration, no people, no recognisable objects or scenes, no logos, no text."
+        "Never flat, never matte, never dusty, never beige, never earthy, never pastel. "
+        "No maps, no typography, no labels, no figuration, no people, no objects, no logos, no text, no recognisable scenes."
     )
 
     # Always use onyx theme — dark background makes neon light pop
@@ -1002,55 +1011,95 @@ def _build_gamma_prompt() -> str:
     threats = swot.get("threats") or []
     gaps = weaknesses + threats
 
-    # ── Build slide content exactly as I write it manually ─────────────────────
+    # ── Build slide content ───────────────────────────────────────────────────
+    jargon_rows = deck_spec.get("jargon_rows") or []
     slides: list[str] = []
 
+    # 1. Hero
     slides.append(f"# {product}\n{av(taglines.get('punchy', taglines.get('visionary', '')))}")
 
+    # 2. Outcome promise
     if taglines.get("outcome"):
-        slides.append(f"# {av(taglines['outcome'])}\n{av(micro or elevator[:250])}")
+        slides.append(f"# {av(taglines['outcome'])}\n{av(micro or elevator[:300])}")
 
+    # 3. Elevator pitch (standalone — different angle from outcome)
+    if elevator and micro and elevator != micro:
+        slides.append(f"# What {av(product)} actually does.\n{av(elevator)}")
+
+    # 4. Context: old world
     if legacy:
-        legacy_pts = "\n".join(f"- {av(l)}" for l in legacy[:5])
-        slides.append(f"# The world changed. The playbook didn't.\n{legacy_pts}")
+        # Split into two slides if enough content
+        chunk1 = legacy[:4]
+        chunk2 = legacy[4:8]
+        slides.append(f"# The world changed. The playbook didn't.\n" + "\n".join(f"- {av(l)}" for l in chunk1))
+        if chunk2:
+            slides.append(f"# The symptoms are everywhere.\n" + "\n".join(f"- {av(l)}" for l in chunk2))
 
+    # 5. New era
     if evolution:
-        evo_pts = "\n".join(f"- {av(e)}" for e in evolution[:5])
-        slides.append(f"# {av(taglines.get('visionary', 'The shift has already happened.'))}\n{evo_pts}")
+        chunk1 = evolution[:4]
+        chunk2 = evolution[4:8]
+        slides.append(f"# {av(taglines.get('visionary', 'The shift has already happened.'))}\n" + "\n".join(f"- {av(e)}" for e in chunk1))
+        if chunk2:
+            slides.append(f"# What the new era demands.\n" + "\n".join(f"- {av(e)}" for e in chunk2))
 
-    if elevator:
-        slides.append(f"# {av(product)}\n{av(elevator)}")
-
+    # 6. Metaphor / positioning statement
     if metaphor.get("statement"):
         slides.append(f"# {av(metaphor['statement'])}\n{av(metaphor.get('rationale', ''))}")
 
+    # 7. Proof points (metrics)
     if metrics:
         m_lines = "\n".join(f"- **{m.get('num','')}** — {av(m.get('label',''))}" for m in metrics)
         slides.append(f"# Proof, not promise.\n{m_lines}")
 
+    # 8. Capability table (jargon rows split in batches of 4)
+    if jargon_rows:
+        for i in range(0, min(len(jargon_rows), 12), 4):
+            batch = jargon_rows[i:i+4]
+            rows = "\n".join(
+                f"| {av(j.get('feature',''))} | {av(j.get('capability',''))} | {av(j.get('benefit',''))} | {j.get('kpi','')} |"
+                for j in batch
+            )
+            slides.append(
+                f"# From feature to outcome.\n"
+                f"| Feature | Capability | Benefit | KPI |\n|---|---|---|---|\n{rows}"
+            )
+
+    # 9. Moat (strengths)
     if strengths:
-        s_lines = "\n".join(f"- {av(s)}" for s in strengths[:5])
+        s_lines = "\n".join(f"- {av(s)}" for s in strengths)
         slides.append(f"# What no one else can replicate.\n{s_lines}")
 
+    # 10. Gaps / investment case
     if gaps:
-        g_lines = "\n".join(f"- {av(g)}" for g in gaps[:5])
+        g_lines = "\n".join(f"- {av(g)}" for g in gaps[:6])
         slides.append(f"# The gaps that justify the investment.\nThese are not liabilities — they are the whitespace this roadmap is built to close.\n{g_lines}")
 
+    # 11. Market opportunity
     if opportunities:
-        o_lines = "\n".join(f"- {av(o)}" for o in opportunities[:5])
+        o_lines = "\n".join(f"- {av(o)}" for o in opportunities)
         slides.append(f"# The market is ready. The timing is now.\n{o_lines}")
 
+    # 12. Market signals (grapevine) — two slides if enough
     if grapevine:
-        q_lines = "\n".join(f'> "{av(g["desc"])}" — {g["title"]}' for g in grapevine[:3])
+        batch1 = grapevine[:4]
+        batch2 = grapevine[4:8]
+        q_lines = "\n".join(f'> "{av(g.get("desc",""))}" — {g.get("title","")}' for g in batch1)
         slides.append(f"# The signal is there.\n{q_lines}")
+        if batch2:
+            q_lines2 = "\n".join(f'> "{av(g.get("desc",""))}" — {g.get("title","")}' for g in batch2)
+            slides.append(f"# The market is already moving.\n{q_lines2}")
 
+    # 13. Roadmap (one card per phase)
     for r in roadmap:
-        pts = "\n".join(f"- {av(pt)}" for pt in r.get("points", [])[:5])
+        pts = "\n".join(f"- {av(pt)}" for pt in r.get("points", []))
         slides.append(f"# {r.get('phase','')} — {av(r.get('name',''))} · {r.get('when','')}\n{pts}")
 
+    # 14. Manifesto — no truncation
     if manifesto:
-        slides.append(f"# We believe.\n{av(manifesto[:700])}")
+        slides.append(f"# We believe.\n{av(manifesto)}")
 
+    # 15. Closing CTA
     slides.append(f"# {av(taglines.get('visionary', product))}\n{av(taglines.get('punchy', ''))}\n\nLet's build it together.")
 
     deck_content = "\n\n---\n\n".join(slides)
