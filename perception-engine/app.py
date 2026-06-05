@@ -863,55 +863,6 @@ def tab_run():
             )
 
 
-def _infer_gamma_theme(palette: dict, motif: str) -> str:
-    """Infer the closest Gamma theme name from the brand palette.
-
-    Gamma themes available: dark, light, minimal, bold, elegant, gradient,
-    nature, tech, luxury, pastel. We pick based on dominant color tone.
-    """
-    # Extract all hex values
-    hexes = []
-    for val in palette.values():
-        if isinstance(val, dict):
-            h = val.get("hex", "")
-            if h:
-                hexes.append(h.lower().lstrip("#"))
-
-    def luminance(h: str) -> float:
-        try:
-            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-            return (0.299 * r + 0.587 * g + 0.114 * b) / 255
-        except Exception:
-            return 0.5
-
-    if not hexes:
-        return "minimal"
-
-    avg_lum = sum(luminance(h) for h in hexes) / len(hexes)
-    motif_lower = (motif or "").lower()
-
-    # Dark background dominant → dark/luxury
-    if avg_lum < 0.3:
-        if any(w in motif_lower for w in ["luxury", "premium", "elegant", "gold", "cartography"]):
-            return "luxury"
-        return "dark"
-    # Very light → minimal or pastel
-    if avg_lum > 0.75:
-        if any(w in motif_lower for w in ["pastel", "soft", "gentle"]):
-            return "pastel"
-        return "minimal"
-    # Mid-tone: pick by motif keywords
-    if any(w in motif_lower for w in ["tech", "digital", "data", "code", "ai"]):
-        return "tech"
-    if any(w in motif_lower for w in ["nature", "organic", "green", "plant"]):
-        return "nature"
-    if any(w in motif_lower for w in ["bold", "impact", "strong", "power"]):
-        return "bold"
-    if any(w in motif_lower for w in ["gradient", "flow", "wave"]):
-        return "gradient"
-    return "elegant"
-
-
 def _build_gamma_prompt() -> str:
     """Assemble a Gamma generation prompt structured exactly like manual generation."""
     from src.config_store import load as config_load
@@ -945,12 +896,25 @@ def _build_gamma_prompt() -> str:
 
     display_font = typography.get("display", "Georgia") if isinstance(typography, dict) else "Georgia"
     body_font = typography.get("body", "Calibri") if isinstance(typography, dict) else "Calibri"
-    visual_style = motif or "premium editorial"
-    if brand_rules:
-        visual_style += f". {brand_rules[:250]}"
+    # Fixed high-quality neon image style — overrides motif/brand_rules for Gamma
+    visual_style = (
+        "Abstract, non-figurative, dynamic and futuristic. "
+        "Luminous neon light emitted against a deep near-black field — glowing arcs, "
+        "sweeping light trails and constellations of bright pulsing nodes, alive with energy and motion. "
+        "Fine emissive lines in electric jade-teal and radiant amber-gold bloom and flare against the darkness, "
+        "with subtle iridescent gradients shimmering at the edges. "
+        "Glowing circuitry and luminous data-ring motifs suggest an invisible territory mapped in real time. "
+        "High contrast, high colour saturation, cinematic depth of field, soft light bloom, "
+        "delicate bokeh, crisp luminous edges, ultra-detailed, high resolution, premium and contemporary. "
+        "Near-black dominates the surface; jade-teal gives structure; amber-gold reserved for singular focal points."
+    )
+    visual_style_negative = (
+        "Never flat, never matte, never dusty, never beige. "
+        "No figuration, no people, no recognisable objects or scenes, no logos, no text."
+    )
 
-    # Infer closest Gamma theme
-    gamma_theme = _infer_gamma_theme(palette, motif)
+    # Always use onyx theme — dark background makes neon light pop
+    gamma_theme = "onyx"
 
     # Build readable color block
     color_lines = []
@@ -1048,11 +1012,14 @@ def _build_gamma_prompt() -> str:
 
 ## THEME & VISUAL IDENTITY
 
-**Gamma theme to use:** `{gamma_theme}`
-(This is the closest match to the brand palette: {color_summary})
+**Gamma theme:** `{gamma_theme}` — use `themeId: "onyx"` (dark background is required for the neon effect)
 
-**Custom image style:** {visual_style}
-Use this as the `imageOptions.style` parameter — do NOT use a named stylePreset, use `custom` with this style string.
+**Image parameters — pass ALL of these exactly:**
+- `imageOptions.source` = `aiGenerated`
+- `imageOptions.stylePreset` = `custom` (do NOT use any named preset — it overrides the style below)
+- `imageOptions.style` = `{visual_style}`
+- negative prompt (if supported as a separate field): `{visual_style_negative}`
+  If no separate negative prompt field exists, append it to `imageOptions.style`.
 
 **Typography:** display = {display_font} / body = {body_font}
 
@@ -1075,8 +1042,8 @@ Use this as the `imageOptions.style` parameter — do NOT use a named stylePrese
 
 ## GENERATION INSTRUCTIONS
 - Use `cardSplit: inputTextBreaks` so each --- becomes a separate card
-- Theme: `{gamma_theme}` — apply consistently across all cards
-- Image style: custom / `{visual_style[:120]}`
+- `themeId`: `onyx` — apply consistently across all cards
+- Images: `source=aiGenerated`, `stylePreset=custom`, style as specified above — never use a named stylePreset
 - Apply vocabulary swaps in every text element including image prompts
 - SWOT is reframed as moat (strengths) + gaps (weaknesses+threats merged) + opportunity — not a 4-quadrant grid
 - One roadmap card per phase so each has room to breathe
