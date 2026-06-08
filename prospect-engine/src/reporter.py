@@ -277,3 +277,6 @@ def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
         if isinstance(output, bytearray):
             return bytes(output)
         return output
+
+    except Exception as e:
+        raise RuntimeError(f"PDF generation failed: {e}") from e
