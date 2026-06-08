@@ -1,4 +1,20 @@
-Produce deck_spec JSON exactly matching the schema below, and brand_tokens (warm/premium palette, not IT-blue, valid 6-digit hex, 4–6 colors). Everything must follow from the dossier — no invented claims.
+Produce deck_spec JSON exactly matching the schema below, and brand_tokens. Everything must follow from the dossier — no invented claims.
+
+**Brand tokens — RADICAL DIFFERENTIATION REQUIRED:**
+The palette must be a unique, opinionated visual identity that reflects THIS product's specific personality, sector, and strategic positioning. No two products should share a palette family.
+
+Rules for brand_tokens:
+- 4–6 colors, all valid 6-digit hex
+- The palette MUST be derived from the product's sector and emotional register — not generic "warm/premium"
+  - A scientific/precision product → cold electric blues, surgical whites, sharp contrasts
+  - A creative/cultural product → vivid saturated pigments, unexpected complementaries, high chroma
+  - A regulatory/compliance product → authoritative navy + gold, or muted zinc + acid green as tension
+  - A luxury/sensory product → deep jewel tones, oxidised metals, dark warmth
+  - A data/intelligence product → midnight black + electric teal + phosphorescent amber
+- Lead with one dominant color (60%), one structural color (30%), one accent that surprises (10%)
+- The accent color MUST be unexpected — it should feel like a decision, not a default
+- `motif`: describe the abstract visual territory in 10–15 words (no maps, no objects, no typography)
+- `rules`: 2–3 specific color usage rules that enforce the hierarchy
 
 **Quantity targets (be generous — better to have more than editors can cut):**
 - `legacy`: 5–7 items (what the old playbook got wrong)

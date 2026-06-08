@@ -844,27 +844,61 @@ def tab_run():
         st.divider()
         st.markdown("#### Generate in Gamma via Claude Code")
         st.caption("No Gamma API key needed — paste this prompt into your Claude Code chat to generate the deck.")
+
         if st.button("Generate Gamma prompt", key="btn_gamma_prompt"):
-            st.session_state["gamma_prompt"] = _build_gamma_prompt()
+            prompt, slide_count = _build_gamma_prompt()
+            st.session_state["gamma_prompt"] = prompt
+            st.session_state["gamma_slide_count"] = slide_count
             if "gamma_prompt" not in _metrics()["outputs_generated"]:
                 _metrics()["outputs_generated"].append("gamma_prompt")
+
+        slide_count = st.session_state.get("gamma_slide_count", 0)
+        if slide_count > 20:
+            st.warning(
+                f"⚠️ **{slide_count} slides detected** — Gamma works best under 20. "
+                "Choose how to proceed:"
+            )
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                if st.button("✂️ Trim to 20 slides", key="btn_trim_slides"):
+                    trimmed, _ = _build_gamma_prompt(max_slides=20)
+                    st.session_state["gamma_prompt"] = trimmed
+                    st.session_state["gamma_slide_count"] = 20
+                    st.rerun()
+            with col_b:
+                if st.button("📑 Split into Part 1 + Part 2", key="btn_split_slides"):
+                    part1, part2, c1, c2 = _build_gamma_prompt(split=True)
+                    st.session_state["gamma_prompt"] = part1
+                    st.session_state["gamma_prompt_part2"] = part2
+                    st.session_state["gamma_slide_count"] = c1
+                    st.rerun()
+            with col_c:
+                st.button("Keep all slides", key="btn_keep_slides")
+
         if st.session_state.get("gamma_prompt"):
-            st.text_area(
-                "Copy this prompt and paste it into Claude Code ↓",
-                value=st.session_state["gamma_prompt"],
-                height=300,
-                key="ta_gamma_prompt",
-            )
-            st.download_button(
-                "Download prompt as .txt",
-                data=st.session_state["gamma_prompt"],
-                file_name="gamma_prompt.txt",
-                mime="text/plain",
-            )
+            if st.session_state.get("gamma_prompt_part2"):
+                st.info(f"**Part 1** ({st.session_state.get('gamma_slide_count', '?')} slides) — generate this first in Gamma, then use Part 2 for the second deck.")
+                tab1, tab2 = st.tabs(["Part 1", "Part 2"])
+                with tab1:
+                    st.text_area("Part 1 — paste into Claude Code", value=st.session_state["gamma_prompt"], height=250, key="ta_gamma_p1")
+                    st.download_button("Download Part 1", data=st.session_state["gamma_prompt"], file_name="gamma_prompt_part1.txt", mime="text/plain")
+                with tab2:
+                    st.text_area("Part 2 — paste into Claude Code", value=st.session_state["gamma_prompt_part2"], height=250, key="ta_gamma_p2")
+                    st.download_button("Download Part 2", data=st.session_state["gamma_prompt_part2"], file_name="gamma_prompt_part2.txt", mime="text/plain")
+            else:
+                label = f"Copy this prompt ({slide_count} slides) and paste it into Claude Code ↓" if slide_count else "Copy this prompt and paste it into Claude Code ↓"
+                st.text_area(label, value=st.session_state["gamma_prompt"], height=300, key="ta_gamma_prompt")
+                st.download_button("Download prompt as .txt", data=st.session_state["gamma_prompt"], file_name="gamma_prompt.txt", mime="text/plain")
 
 
-def _build_gamma_prompt() -> str:
-    """Assemble a Gamma generation prompt structured exactly like manual generation."""
+def _build_gamma_prompt(max_slides: int | None = None, split: bool = False):
+    """Assemble a Gamma generation prompt structured exactly like manual generation.
+
+    Returns:
+      - Normal mode: (prompt_str, slide_count)
+      - split=True: (part1_str, part2_str, count1, count2)
+      - max_slides: truncate slide list to this length
+    """
     from src.config_store import load as config_load
 
     deck_spec = st.session_state.deck_spec or {}
@@ -1102,18 +1136,27 @@ def _build_gamma_prompt() -> str:
     # 15. Closing CTA
     slides.append(f"# {av(taglines.get('visionary', product))}\n{av(taglines.get('punchy', ''))}\n\nLet's build it together.")
 
-    deck_content = "\n\n---\n\n".join(slides)
-
     vocab_lines = "\n".join(f"- {k} → {v}" for k, v in vocab_map.items())
     pillar_lines = "\n".join(
         f"- **{p.get('name','')}**: say «{p.get('do_say','')}», never «{p.get('dont_say','')}»"
         for p in pillars
     )
 
-    prompt = f"""Generate a Gamma presentation using the `generate` tool.
+    # Apply max_slides or split
+    if max_slides:
+        slides = slides[:max_slides]
+    if split:
+        mid = len(slides) // 2
+        slides_a, slides_b = slides[:mid], slides[mid:]
+    else:
+        slides_a = slides
+
+    def _make_prompt(slide_list: list[str]) -> str:  # noqa: E306
+        dc = "\n\n---\n\n".join(slide_list)
+        return f"""Generate a Gamma presentation using the `generate` tool.
 
 **Product:** {product}
-**Total slides:** {len(slides)} (use exactly these --- breaks as card boundaries; set cardSplit to inputTextBreaks)
+**Total slides:** {len(slide_list)} cards (use exactly these --- breaks as card boundaries; set cardSplit to inputTextBreaks)
 
 ---
 
@@ -1143,7 +1186,7 @@ def _build_gamma_prompt() -> str:
 ## DECK CONTENT
 (Each --- separator = one new card. Pass this as inputText with cardSplit: inputTextBreaks)
 
-{deck_content}
+{dc}
 
 ---
 
@@ -1157,7 +1200,10 @@ def _build_gamma_prompt() -> str:
 - Manifesto card: large typographic treatment, minimal imagery
 - Closing card: full-bleed, strong visual, CTA prominent
 """
-    return prompt
+
+    if split:
+        return _make_prompt(slides_a), _make_prompt(slides_b), len(slides_a), len(slides_b)
+    return _make_prompt(slides_a), len(slides_a)
 
 
 def _export_to_gamma():
