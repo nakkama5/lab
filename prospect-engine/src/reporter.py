@@ -273,8 +273,7 @@ def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
                 pdf.set_text_color(50, 50, 50)
                 pdf.multi_cell(0, 5, _safe_text(stripped))
 
-        return bytes(pdf.output())
-
-    except Exception as e:
-        # Fallback: return markdown as bytes
-        return markdown_text.encode("utf-8")
+        output = pdf.output()
+        if isinstance(output, bytearray):
+            return bytes(output)
+        return output

@@ -653,19 +653,26 @@ def main():
                     analyst_notes=st.session_state["analyst_notes"],
                     request_date=datetime.utcnow().strftime("%d/%m/%Y"),
                 )
-                pdf_bytes = generate_pdf(md, prospect_name)
                 st.session_state["report_md"] = md
-                st.session_state["report_pdf"] = pdf_bytes
+                try:
+                    pdf_bytes = generate_pdf(md, prospect_name)
+                    st.session_state["report_pdf"] = pdf_bytes
+                except Exception as pdf_err:
+                    st.error(f"Erreur PDF : {pdf_err}")
+                    st.session_state["report_pdf"] = None
 
             if st.session_state.get("report_md"):
                 col_dl1, col_dl2 = st.columns(2)
                 with col_dl1:
-                    st.download_button(
-                        "⬇️ Télécharger PDF",
-                        data=st.session_state["report_pdf"],
-                        file_name=f"prospect_{prospect_name.replace(' ', '_')}.pdf",
-                        mime="application/pdf",
-                    )
+                    if st.session_state.get("report_pdf"):
+                        st.download_button(
+                            "⬇️ Télécharger PDF",
+                            data=st.session_state["report_pdf"],
+                            file_name=f"prospect_{prospect_name.replace(' ', '_')}.pdf",
+                            mime="application/pdf",
+                        )
+                    else:
+                        st.caption("PDF non disponible")
                 with col_dl2:
                     st.download_button(
                         "⬇️ Télécharger Markdown",
