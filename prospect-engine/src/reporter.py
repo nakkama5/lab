@@ -194,6 +194,14 @@ def generate_markdown(
     return "\n".join(lines)
 
 
+def _safe_text(text: str) -> str:
+    """Sanitize text to Latin-1 safe characters for fpdf2 built-in fonts."""
+    import unicodedata
+    # Normalize to decomposed form, then encode to latin-1 dropping unmappable chars
+    normalized = unicodedata.normalize("NFKD", text)
+    return normalized.encode("latin-1", errors="replace").decode("latin-1")
+
+
 def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
     """Generate a PDF from the markdown report using fpdf2."""
     try:
@@ -203,7 +211,7 @@ def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
             def header(self):
                 self.set_font("Helvetica", "B", 9)
                 self.set_text_color(100, 100, 100)
-                self.cell(0, 8, f"Prospect Qualifier — {prospect_name}", align="R")
+                self.cell(0, 8, _safe_text(f"Prospect Qualifier — {prospect_name}"), align="R")
                 self.ln(4)
                 self.set_draw_color(200, 200, 200)
                 self.line(10, self.get_y(), 200, self.get_y())
@@ -230,18 +238,18 @@ def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
             if stripped.startswith("# "):
                 pdf.set_font("Helvetica", "B", 16)
                 pdf.set_text_color(10, 10, 10)
-                pdf.multi_cell(0, 8, stripped[2:])
+                pdf.multi_cell(0, 8, _safe_text(stripped[2:]))
                 pdf.ln(2)
             elif stripped.startswith("## "):
                 pdf.set_font("Helvetica", "B", 12)
                 pdf.set_text_color(30, 30, 30)
                 pdf.set_fill_color(240, 240, 240)
-                pdf.multi_cell(0, 7, stripped[3:], fill=True)
+                pdf.multi_cell(0, 7, _safe_text(stripped[3:]), fill=True)
                 pdf.ln(1)
             elif stripped.startswith("### "):
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(0, 6, stripped[4:])
+                pdf.multi_cell(0, 6, _safe_text(stripped[4:]))
             elif stripped.startswith("---"):
                 pdf.set_draw_color(180, 180, 180)
                 pdf.line(15, pdf.get_y(), 195, pdf.get_y())
@@ -249,22 +257,21 @@ def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
             elif stripped.startswith("- ") or stripped.startswith("* "):
                 pdf.set_font("Helvetica", "", 9)
                 pdf.set_text_color(60, 60, 60)
-                pdf.multi_cell(0, 5, "  • " + stripped[2:])
+                pdf.multi_cell(0, 5, _safe_text("  • " + stripped[2:]))
             elif stripped.startswith("|"):
-                # Table row — render as plain text
                 cells = [c.strip() for c in stripped.split("|") if c.strip()]
                 row_text = "  |  ".join(cells[:4])
                 pdf.set_font("Courier", "", 8)
                 pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(0, 5, row_text)
+                pdf.multi_cell(0, 5, _safe_text(row_text))
             elif stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("**"):
                 pdf.set_font("Helvetica", "I", 9)
                 pdf.set_text_color(100, 100, 100)
-                pdf.multi_cell(0, 5, stripped.strip("*"))
+                pdf.multi_cell(0, 5, _safe_text(stripped.strip("*")))
             else:
                 pdf.set_font("Helvetica", "", 9)
                 pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(0, 5, stripped)
+                pdf.multi_cell(0, 5, _safe_text(stripped))
 
         return bytes(pdf.output())
 

@@ -21,29 +21,133 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-html, body, [class*="css"] {
+
+/* Base */
+html, body { background: #0a0a0a !important; color: #f0f0f0 !important; }
+.stApp, .stApp > div, section[data-testid="stMainBlockContainer"],
+[data-testid="block-container"] {
+    background: #0a0a0a !important;
     font-family: 'Inter', -apple-system, sans-serif !important;
+}
+
+/* All text white */
+p, li, span, div, label, td, th, caption,
+.stMarkdown, .stMarkdown p, .stMarkdown li,
+[class*="css"], [data-testid*="stMarkdown"],
+[data-testid="stText"], [data-testid="stCaption"],
+.stCaption, .stCaption p,
+[data-testid="stMetricLabel"], [data-testid="stMetricDelta"],
+[data-testid="stExpander"] p, [data-testid="stExpander"] span,
+[data-testid="stExpander"] div, [data-testid="stExpander"] label,
+.streamlit-expanderHeader, .streamlit-expanderContent,
+[data-testid="stExpanderToggleIcon"],
+[data-baseweb="tab"] span, [data-baseweb="tab-list"] span,
+.stTabs [role="tab"], .stTabs [role="tablist"],
+[data-testid="stFileUploaderDropzone"] span,
+[data-testid="stFileUploaderDropzone"] p,
+[data-testid="stFileUploaderFile"] span,
+small, .small { color: #f0f0f0 !important; }
+
+h1, h2, h3, h4, h5, h6,
+[data-testid="stHeading"] { color: #f0f0f0 !important; }
+h1 { font-size: 1.8rem !important; font-weight: 700 !important; }
+h2 { font-size: 1.3rem !important; font-weight: 600 !important; }
+h3 { font-size: 1.05rem !important; font-weight: 600 !important; }
+
+/* Inputs */
+.stTextInput input, .stTextArea textarea, .stSelectbox select,
+input[type="text"], textarea {
+    background: #141414 !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 8px !important;
+}
+.stTextInput label, .stTextArea label, .stSelectbox label,
+[data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p {
     color: #f0f0f0 !important;
 }
-.stApp { background: #0a0a0a !important; }
-section[data-testid="stMainBlockContainer"] { background: #0a0a0a !important; padding-top: 2rem; }
-p, li, span, div, label, .stMarkdown { color: #f0f0f0 !important; }
-h1 { font-size: 1.8rem !important; font-weight: 700 !important; color: #f0f0f0 !important; }
-h2 { font-size: 1.3rem !important; font-weight: 600 !important; color: #f0f0f0 !important; }
-h3 { font-size: 1.05rem !important; font-weight: 600 !important; color: #f0f0f0 !important; }
-.stTextInput input, .stTextArea textarea {
-    background: #141414 !important; color: #f0f0f0 !important;
-    border: 1px solid #2a2a2a !important; border-radius: 8px !important;
+input::placeholder, textarea::placeholder { color: #666 !important; }
+
+/* Buttons: gold bg, black text */
+.stButton > button, .stDownloadButton > button {
+    background: #e8d5a0 !important;
+    color: #0a0a0a !important;
+    border: none !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1.5rem !important;
+    font-family: 'Inter', sans-serif !important;
 }
-.stButton > button {
-    background: #e8d5a0 !important; color: #0a0a0a !important;
-    border: none !important; border-radius: 20px !important;
-    font-weight: 600 !important; padding: 0.5rem 1.5rem !important;
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background: #f0e4b8 !important;
+    color: #0a0a0a !important;
 }
-.stButton > button:hover { background: #f0e4b8 !important; }
-.stFileUploader { background: #141414 !important; border-radius: 8px !important; border: 1px solid #2a2a2a !important; }
-div[data-testid="stMetricValue"] { color: #e8d5a0 !important; font-size: 2rem !important; font-weight: 700 !important; }
+.stButton > button:disabled { opacity: 0.4 !important; }
+
+/* File uploader */
+[data-testid="stFileUploaderDropzone"] {
+    background: #141414 !important;
+    border: 1px dashed #2a2a2a !important;
+    border-radius: 8px !important;
+}
+[data-testid="stFileUploaderDropzone"] * { color: #f0f0f0 !important; }
+
+/* Metrics */
+[data-testid="stMetricValue"] {
+    color: #e8d5a0 !important;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+}
+[data-testid="stMetricLabel"] { color: #aaa !important; }
+
+/* Progress */
 .stProgress > div > div { background: #e8d5a0 !important; }
+[data-testid="stProgressBar"] > div { background: #1e1e1e !important; }
+
+/* Expanders */
+[data-testid="stExpander"] {
+    background: #111 !important;
+    border: 1px solid #222 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stExpander"] summary,
+[data-testid="stExpanderToggleIcon"] { color: #f0f0f0 !important; }
+.streamlit-expanderHeader { color: #f0f0f0 !important; background: #111 !important; }
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    background: #0a0a0a !important;
+    border-bottom: 1px solid #222 !important;
+}
+.stTabs [data-baseweb="tab"] {
+    background: #0a0a0a !important;
+    color: #888 !important;
+    border-radius: 4px 4px 0 0 !important;
+}
+.stTabs [data-baseweb="tab"]:hover { color: #e8d5a0 !important; }
+.stTabs [aria-selected="true"] {
+    color: #e8d5a0 !important;
+    border-bottom: 2px solid #e8d5a0 !important;
+    background: #0a0a0a !important;
+}
+.stTabs [data-baseweb="tab-panel"] { background: #0a0a0a !important; }
+
+/* Info / warning / error boxes */
+[data-testid="stAlert"], .stAlert { background: #1a1a1a !important; }
+[data-testid="stAlert"] p, [data-testid="stAlert"] span { color: #f0f0f0 !important; }
+.element-container [data-testid="stInfo"] { border-left-color: #e8d5a0 !important; }
+
+/* Divider */
+hr { border-color: #222 !important; }
+
+/* Spinner */
+[data-testid="stSpinner"] p, [data-testid="stSpinner"] span { color: #f0f0f0 !important; }
+
+/* JSON viewer */
+[data-testid="stJson"] { background: #111 !important; color: #f0f0f0 !important; }
+
+/* Sidebar (just in case) */
+[data-testid="stSidebar"] { background: #0d0d0d !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -57,7 +161,12 @@ def _init_state():
         "report_pdf": None,
         "prospect_name": "",
         "analyst_notes": "",
-        "stage": "input",  # input | researching | scoring | done
+        "stage": "input",
+        "cycle_session_start": None,
+        "cycle_research_start": None,
+        "cycle_research_end": None,
+        "cycle_score_start": None,
+        "cycle_score_end": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -69,9 +178,13 @@ _init_state()
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def _reset():
-    for k in ["research_data", "score_data", "report_md", "report_pdf"]:
-        st.session_state[k] = None
+    for k in list(st.session_state.keys()):
+        if k not in ("input_name",):
+            st.session_state[k] = None
     st.session_state["stage"] = "input"
+    st.session_state["prospect_name"] = ""
+    st.session_state["analyst_notes"] = ""
+    st.session_state["cycle_session_start"] = None
     st.rerun()
 
 
@@ -87,9 +200,17 @@ def _confidence_badge(conf: str) -> str:
     }.get(conf, "")
 
 
+def _fmt_duration(start: datetime | None, end: datetime | None) -> str:
+    if not start or not end:
+        return "—"
+    secs = (end - start).total_seconds()
+    if secs < 60:
+        return f"{secs:.0f}s"
+    return f"{secs // 60:.0f}m {secs % 60:.0f}s"
+
+
 # ── Voice input component ──────────────────────────────────────────────────────
 def _voice_input_widget(key: str, label: str = "Dicter vos notes") -> str:
-    """Microphone button using browser Web Speech API + editable text area."""
     st.markdown(f"**{label}**")
     st.caption("Chrome/Edge requis pour la reconnaissance vocale. Cliquez sur 🎤 puis parlez.")
 
@@ -146,9 +267,8 @@ function startRecognition_{key}() {{
 """
     st.components.v1.html(components_html, height=160)
 
-    # Editable text area in Python (user can also type here directly)
     notes = st.text_area(
-        "Notes (éditables — le texte dicté apparaît dans la zone ci-dessus, recopiez-le ici si besoin)",
+        "Notes",
         value=st.session_state.get("analyst_notes", ""),
         height=100,
         key=f"notes_ta_{key}",
@@ -159,7 +279,7 @@ function startRecognition_{key}() {{
 
 
 # ── Score display ──────────────────────────────────────────────────────────────
-def _show_score(score_data: dict):
+def _show_score(score_data: dict, research_data: dict | None = None):
     total = score_data.get("total", 0)
     verdict = score_data.get("verdict", "—")
     v_color = _verdict_color(verdict)
@@ -191,6 +311,17 @@ def _show_score(score_data: dict):
     # Criteria grid
     st.subheader("Détail par critère")
     criteria_order = ["A", "B", "C", "D", "E", "F"]
+
+    # Map criteria to research section keys
+    criteria_research_map = {
+        "A": "financial",
+        "B": "marketing",
+        "C": "team",
+        "D": "product",
+        "E": "realism",
+        "F": "distribution",
+    }
+
     for key in criteria_order:
         s = scores.get(key, {})
         m = meta.get(key, {})
@@ -201,14 +332,37 @@ def _show_score(score_data: dict):
         weight = m.get("weight", 1)
         conf = _confidence_badge(s.get("confidence", ""))
         justif = s.get("justification", "—")
-
         pct = (score_val / 5) if score_val else 0
-        bar_color = "#4caf50" if pct >= 0.6 else "#ff9800" if pct >= 0.4 else "#f44336"
 
         with st.expander(f"**{key}. {name}** — {weighted}/{max_pts} pts  ·  {score_val}/5  ·  _{conf}_"):
             st.markdown(f"**Pondération :** ×{weight}  ·  **Score :** {score_val}/5  ·  **Points :** {weighted}/{max_pts}")
             st.progress(pct)
-            st.markdown(justif)
+            st.markdown(f"**Justification :** {justif}")
+
+            # Details appendix: research findings for this criterion
+            if research_data:
+                research_key = criteria_research_map.get(key)
+                rdata = research_data.get(research_key, {}) if research_key else {}
+                if rdata and isinstance(rdata, dict):
+                    st.markdown("---")
+                    st.markdown("**Données de recherche**")
+                    r_conf = _confidence_badge(rdata.get("confidence", ""))
+                    if r_conf:
+                        st.caption(r_conf)
+                    r_summary = rdata.get("summary", "")
+                    if r_summary:
+                        st.markdown(r_summary)
+                    # Sub-criteria details if available
+                    details = rdata.get("details", {})
+                    if details and isinstance(details, dict):
+                        for sub_key, sub_val in details.items():
+                            if sub_val:
+                                st.markdown(f"- **{sub_key}** : {sub_val}")
+                    evidence = rdata.get("evidence", [])
+                    if evidence:
+                        st.markdown("**Éléments de preuve :**")
+                        for ev in evidence[:5]:
+                            st.markdown(f"  - {ev}")
 
     if bonus.get("applicable"):
         with st.expander(f"**BONUS Personal Branding** — +{bonus.get('points', 0)} pts"):
@@ -231,6 +385,118 @@ def _show_score(score_data: dict):
     if next_action:
         st.divider()
         st.markdown(f"**Action recommandée :** {next_action}")
+
+
+# ── Cycle Report tab ───────────────────────────────────────────────────────────
+def _show_cycle_report():
+    st.subheader("📊 Cycle Report")
+    st.caption("Métriques d'exécution de la dernière analyse")
+
+    session_start = st.session_state.get("cycle_session_start")
+    r_start = st.session_state.get("cycle_research_start")
+    r_end = st.session_state.get("cycle_research_end")
+    s_start = st.session_state.get("cycle_score_start")
+    s_end = st.session_state.get("cycle_score_end")
+
+    if not session_start:
+        st.info("Aucune analyse effectuée dans cette session.")
+        return
+
+    prospect_name = st.session_state.get("prospect_name", "—")
+    stage = st.session_state.get("stage", "input")
+    research_data = st.session_state.get("research_data") or {}
+    score_data = st.session_state.get("score_data") or {}
+
+    # Timing overview
+    st.markdown("### ⏱ Chronologie")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Démarrage session", session_start.strftime("%H:%M:%S") if session_start else "—")
+    with col2:
+        st.metric("Durée recherche", _fmt_duration(r_start, r_end))
+    with col3:
+        st.metric("Durée scoring", _fmt_duration(s_start, s_end))
+    with col4:
+        total_start = r_start or session_start
+        total_end = s_end or r_end
+        st.metric("Durée totale", _fmt_duration(total_start, total_end))
+
+    st.divider()
+
+    # Search events
+    search_events = research_data.get("_search_events", [])
+    st.markdown(f"### 🌐 Recherches web — {len(search_events)} requêtes")
+    if search_events:
+        for i, ev in enumerate(search_events, 1):
+            q = ev.get("query", "")
+            results = ev.get("results", [])
+            st.markdown(f"**{i}.** `{q}`")
+            if results:
+                for r in results[:2]:
+                    title = r.get("title", "")
+                    url = r.get("url", "")
+                    if title:
+                        st.caption(f"   → {title}" + (f" — {url}" if url else ""))
+    else:
+        st.caption("Aucune requête enregistrée.")
+
+    st.divider()
+
+    # Score breakdown
+    if score_data:
+        st.markdown("### 🎯 Récapitulatif du score")
+        total = score_data.get("total", 0)
+        verdict = score_data.get("verdict", "—")
+        v_color = _verdict_color(verdict)
+
+        col_s, col_v = st.columns([1, 2])
+        with col_s:
+            st.metric("Score final", f"{total}/100")
+        with col_v:
+            st.markdown(
+                f"<span style='background:{v_color};color:white;padding:6px 16px;"
+                f"border-radius:16px;font-weight:700;'>{verdict}</span>",
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("")
+        scores = score_data.get("scores", {})
+        meta = score_data.get("criteria_meta", {})
+        rows = []
+        for key in ["A", "B", "C", "D", "E", "F"]:
+            s = scores.get(key, {})
+            m = meta.get(key, {})
+            rows.append({
+                "Critère": f"{key}. {m.get('name', key)}",
+                "Score": f"{s.get('score', '—')}/5",
+                "Points": f"{s.get('weighted', '—')}/{m.get('max', '—')}",
+                "Confiance": _confidence_badge(s.get("confidence", "")),
+            })
+        # Render as markdown table
+        st.markdown("| Critère | Score | Points | Confiance |")
+        st.markdown("|---------|-------|--------|-----------|")
+        for r in rows:
+            st.markdown(f"| {r['Critère']} | {r['Score']} | {r['Points']} | {r['Confiance']} |")
+
+        bonus = score_data.get("bonus", {})
+        if bonus.get("applicable"):
+            st.markdown(f"| BONUS Personal Branding | — | +{bonus.get('points', 0)} | ✓ |")
+        st.markdown(f"| **TOTAL** | | **{total}/100** | **{verdict}** |")
+
+    st.divider()
+
+    # Session metadata
+    st.markdown("### 🔧 Métadonnées")
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+        st.markdown(f"**Prospect :** {prospect_name}")
+        has_notes = bool(st.session_state.get("analyst_notes", ""))
+        st.markdown(f"**Notes terrain :** {'Oui' if has_notes else 'Non'}")
+    with col_m2:
+        st.markdown(f"**Statut :** {stage}")
+        keys_present = [k for k in ["research_data", "score_data", "report_md", "report_pdf"]
+                        if st.session_state.get(k)]
+        st.markdown(f"**Données disponibles :** {', '.join(keys_present) or '—'}")
 
 
 # ── Main app ───────────────────────────────────────────────────────────────────
@@ -278,7 +544,6 @@ def main():
             st.caption("Entrez au minimum le nom du prospect pour lancer l'analyse.")
 
         if st.button("🚀 Lancer l'analyse", disabled=not can_run, key="btn_run"):
-            # Extract text from documents
             doc_text = ""
             if uploaded:
                 from src.ingest import load_files
@@ -292,6 +557,7 @@ def main():
             st.session_state["prospect_name"] = prospect_name.strip()
             st.session_state["analyst_notes"] = full_notes
             st.session_state["stage"] = "researching"
+            st.session_state["cycle_session_start"] = datetime.utcnow()
             st.rerun()
 
     # ── RESEARCH ───────────────────────────────────────────────────────────────
@@ -320,6 +586,7 @@ def main():
 
         try:
             from src.researcher import run_research
+            st.session_state["cycle_research_start"] = datetime.utcnow()
             status_text.text("🔍 Collecte des informations publiques...")
             research_data = run_research(
                 prospect_name=prospect_name,
@@ -327,6 +594,7 @@ def main():
                 progress_cb=progress_cb,
             )
             st.session_state["research_data"] = research_data
+            st.session_state["cycle_research_end"] = datetime.utcnow()
             progress_bar.progress(0.9)
             status_text.text("✓ Recherche terminée")
             st.session_state["stage"] = "scoring"
@@ -344,11 +612,13 @@ def main():
         with st.spinner("Analyse et scoring en cours..."):
             try:
                 from src.scorer import run_score
+                st.session_state["cycle_score_start"] = datetime.utcnow()
                 score_data = run_score(
                     research_data=st.session_state["research_data"],
                     analyst_notes=st.session_state["analyst_notes"],
                 )
                 st.session_state["score_data"] = score_data
+                st.session_state["cycle_score_end"] = datetime.utcnow()
                 st.session_state["stage"] = "done"
                 st.rerun()
             except Exception as e:
@@ -363,51 +633,57 @@ def main():
         score_data = st.session_state["score_data"]
         research_data = st.session_state["research_data"]
 
-        st.markdown(f"## Résultats — {prospect_name}")
+        tab_analyse, tab_cycle = st.tabs(["🔍 Analyse", "📊 Cycle Report"])
 
-        _show_score(score_data)
+        with tab_analyse:
+            st.markdown(f"## Résultats — {prospect_name}")
 
-        # Generate report
-        st.divider()
-        st.subheader("📄 Rapport")
+            _show_score(score_data, research_data)
 
-        if st.button("Générer le rapport complet", key="btn_report"):
-            from src.reporter import generate_markdown, generate_pdf
-            md = generate_markdown(
-                prospect_name=prospect_name,
-                research=research_data,
-                score=score_data,
-                analyst_notes=st.session_state["analyst_notes"],
-                request_date=datetime.utcnow().strftime("%d/%m/%Y"),
-            )
-            pdf_bytes = generate_pdf(md, prospect_name)
-            st.session_state["report_md"] = md
-            st.session_state["report_pdf"] = pdf_bytes
+            # Generate report
+            st.divider()
+            st.subheader("📄 Rapport")
 
-        if st.session_state.get("report_md"):
-            col_dl1, col_dl2 = st.columns(2)
-            with col_dl1:
-                st.download_button(
-                    "⬇️ Télécharger PDF",
-                    data=st.session_state["report_pdf"],
-                    file_name=f"prospect_{prospect_name.replace(' ', '_')}.pdf",
-                    mime="application/pdf",
+            if st.button("Générer le rapport complet", key="btn_report"):
+                from src.reporter import generate_markdown, generate_pdf
+                md = generate_markdown(
+                    prospect_name=prospect_name,
+                    research=research_data,
+                    score=score_data,
+                    analyst_notes=st.session_state["analyst_notes"],
+                    request_date=datetime.utcnow().strftime("%d/%m/%Y"),
                 )
-            with col_dl2:
-                st.download_button(
-                    "⬇️ Télécharger Markdown",
-                    data=st.session_state["report_md"],
-                    file_name=f"prospect_{prospect_name.replace(' ', '_')}.md",
-                    mime="text/markdown",
-                )
+                pdf_bytes = generate_pdf(md, prospect_name)
+                st.session_state["report_md"] = md
+                st.session_state["report_pdf"] = pdf_bytes
 
-            with st.expander("Aperçu du rapport"):
-                st.markdown(st.session_state["report_md"])
+            if st.session_state.get("report_md"):
+                col_dl1, col_dl2 = st.columns(2)
+                with col_dl1:
+                    st.download_button(
+                        "⬇️ Télécharger PDF",
+                        data=st.session_state["report_pdf"],
+                        file_name=f"prospect_{prospect_name.replace(' ', '_')}.pdf",
+                        mime="application/pdf",
+                    )
+                with col_dl2:
+                    st.download_button(
+                        "⬇️ Télécharger Markdown",
+                        data=st.session_state["report_md"],
+                        file_name=f"prospect_{prospect_name.replace(' ', '_')}.md",
+                        mime="text/markdown",
+                    )
 
-        # Raw data (debug)
-        with st.expander("Données brutes (debug)"):
-            st.json(score_data)
-            st.json({k: v for k, v in research_data.items() if not k.startswith("_")})
+                with st.expander("Aperçu du rapport"):
+                    st.markdown(st.session_state["report_md"])
+
+            # Raw data (debug)
+            with st.expander("Données brutes (debug)"):
+                st.json(score_data)
+                st.json({k: v for k, v in research_data.items() if not k.startswith("_")})
+
+        with tab_cycle:
+            _show_cycle_report()
 
 
 if __name__ == "__main__":
