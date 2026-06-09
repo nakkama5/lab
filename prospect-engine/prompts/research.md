@@ -2,6 +2,24 @@ MISSION : Réalise une due diligence complète sur le prospect "{prospect_name}"
 
 {analyst_notes_block}
 
+IMPÉRATIF — RECHERCHES WEB :
+Tu DOIS lancer au minimum 15 recherches web distinctes avant de produire ton analyse. Ne réponds JAMAIS depuis ta mémoire d'entraînement seule.
+Exemples de requêtes à lancer (adapte au prospect) :
+  "{prospect_name} brand"
+  "{prospect_name} founder LinkedIn"
+  "{prospect_name} funding investment"
+  "{prospect_name} Instagram followers"
+  "{prospect_name} press coverage"
+  "{prospect_name} retailers Sephora"
+  "{prospect_name} price perfume"
+  "{prospect_name} launch 2023 2024"
+  "{prospect_name} fragrance supplier"
+  "{prospect_name} revenue sales"
+  "{prospect_name} Crunchbase"
+  "{prospect_name} TikTok"
+  "{prospect_name} pop-up store event"
+  "{prospect_name} distribution wholesale"
+  "{prospect_name} CEO team background"
 Lance des recherches web ciblées sur chacun des 7 axes ci-dessous. Pour chaque axe, indique explicitement : données trouvées / partiellement trouvées / non disponibles en ligne.
 
 ─── AXE 1 · IDENTITÉ & STRUCTURE ───

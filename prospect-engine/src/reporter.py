@@ -204,52 +204,52 @@ def _safe_text(text: str) -> str:
 
 def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
     """Generate a PDF from the markdown report using fpdf2."""
-    try:
-        from fpdf import FPDF
+    from fpdf import FPDF
 
-        class PDF(FPDF):
-            def header(self):
-                self.set_font("Helvetica", "B", 9)
-                self.set_text_color(100, 100, 100)
-                self.cell(0, 8, _safe_text(f"Prospect Qualifier — {prospect_name}"), align="R")
-                self.ln(4)
-                self.set_draw_color(200, 200, 200)
-                self.line(10, self.get_y(), 200, self.get_y())
-                self.ln(3)
+    PAGE_W = 180  # effective width (A4 210mm - 15mm left - 15mm right)
 
-            def footer(self):
-                self.set_y(-15)
-                self.set_font("Helvetica", "I", 8)
-                self.set_text_color(150, 150, 150)
-                self.cell(0, 10, f"Page {self.page_no()}", align="C")
+    class PDF(FPDF):
+        def header(self):
+            self.set_font("Helvetica", "B", 9)
+            self.set_text_color(100, 100, 100)
+            self.cell(PAGE_W, 8, _safe_text(f"Prospect Qualifier — {prospect_name}"), align="R")
+            self.ln(4)
+            self.set_draw_color(200, 200, 200)
+            self.line(15, self.get_y(), 195, self.get_y())
+            self.ln(3)
 
-        pdf = PDF()
-        pdf.set_auto_page_break(auto=True, margin=20)
-        pdf.set_margins(15, 20, 15)
-        pdf.add_page()
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Helvetica", "I", 8)
+            self.set_text_color(150, 150, 150)
+            self.cell(PAGE_W, 10, f"Page {self.page_no()}", align="C")
 
-        # Parse and render markdown line by line
-        for line in markdown_text.split("\n"):
-            stripped = line.strip()
-            if not stripped:
-                pdf.ln(2)
-                continue
+    pdf = PDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.set_margins(15, 20, 15)
+    pdf.add_page()
 
+    for line in markdown_text.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            pdf.ln(2)
+            continue
+        try:
             if stripped.startswith("# "):
                 pdf.set_font("Helvetica", "B", 16)
                 pdf.set_text_color(10, 10, 10)
-                pdf.multi_cell(0, 8, _safe_text(stripped[2:]))
+                pdf.multi_cell(PAGE_W, 8, _safe_text(stripped[2:]))
                 pdf.ln(2)
             elif stripped.startswith("## "):
                 pdf.set_font("Helvetica", "B", 12)
                 pdf.set_text_color(30, 30, 30)
                 pdf.set_fill_color(240, 240, 240)
-                pdf.multi_cell(0, 7, _safe_text(stripped[3:]), fill=True)
+                pdf.multi_cell(PAGE_W, 7, _safe_text(stripped[3:]), border=0, align="L", fill=True)
                 pdf.ln(1)
             elif stripped.startswith("### "):
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(0, 6, _safe_text(stripped[4:]))
+                pdf.multi_cell(PAGE_W, 6, _safe_text(stripped[4:]))
             elif stripped.startswith("---"):
                 pdf.set_draw_color(180, 180, 180)
                 pdf.line(15, pdf.get_y(), 195, pdf.get_y())
@@ -257,26 +257,27 @@ def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
             elif stripped.startswith("- ") or stripped.startswith("* "):
                 pdf.set_font("Helvetica", "", 9)
                 pdf.set_text_color(60, 60, 60)
-                pdf.multi_cell(0, 5, _safe_text("  • " + stripped[2:]))
+                pdf.multi_cell(PAGE_W, 5, _safe_text("  * " + stripped[2:]))
             elif stripped.startswith("|"):
                 cells = [c.strip() for c in stripped.split("|") if c.strip()]
+                if all(set(c) <= {"-", ":"} for c in cells):
+                    continue  # skip separator rows
                 row_text = "  |  ".join(cells[:4])
                 pdf.set_font("Courier", "", 8)
                 pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(0, 5, _safe_text(row_text))
+                pdf.multi_cell(PAGE_W, 5, _safe_text(row_text))
             elif stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("**"):
                 pdf.set_font("Helvetica", "I", 9)
                 pdf.set_text_color(100, 100, 100)
-                pdf.multi_cell(0, 5, _safe_text(stripped.strip("*")))
+                pdf.multi_cell(PAGE_W, 5, _safe_text(stripped.strip("*")))
             else:
                 pdf.set_font("Helvetica", "", 9)
                 pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(0, 5, _safe_text(stripped))
+                pdf.multi_cell(PAGE_W, 5, _safe_text(stripped))
+        except Exception:
+            pass  # skip any line that fails to render
 
-        output = pdf.output()
-        if isinstance(output, bytearray):
-            return bytes(output)
-        return output
-
-    except Exception as e:
-        raise RuntimeError(f"PDF generation failed: {e}") from e
+    output = pdf.output()
+    if isinstance(output, bytearray):
+        return bytes(output)
+    return output

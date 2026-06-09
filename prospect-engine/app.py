@@ -402,6 +402,34 @@ def _show_cycle_report():
         st.info("Aucune analyse effectuée dans cette session.")
         return
 
+    # Export txt button
+    def _build_cycle_txt() -> str:
+        lines = [f"CYCLE REPORT — {st.session_state.get('prospect_name', '—')}",
+                 f"Session : {session_start.strftime('%Y-%m-%d %H:%M:%S') if session_start else '—'}",
+                 f"Durée recherche : {_fmt_duration(r_start, r_end)}",
+                 f"Durée scoring : {_fmt_duration(s_start, s_end)}", ""]
+        r_data = st.session_state.get("research_data") or {}
+        evts = r_data.get("_search_events", [])
+        lines.append(f"REQUÊTES WEB ({len(evts)})")
+        for i, ev in enumerate(evts, 1):
+            lines.append(f"  {i}. {ev.get('query', '')}")
+        lines.append("")
+        s_data = st.session_state.get("score_data") or {}
+        if s_data:
+            lines.append(f"SCORE : {s_data.get('total', '—')}/100 — {s_data.get('verdict', '—')}")
+            for key in ["A", "B", "C", "D", "E", "F"]:
+                s = s_data.get("scores", {}).get(key, {})
+                m = s_data.get("criteria_meta", {}).get(key, {})
+                lines.append(f"  {key}. {m.get('name', key)} : {s.get('score', '—')}/5 — {s.get('weighted', '—')}/{m.get('max', '—')} pts")
+        return "\n".join(lines)
+
+    st.download_button(
+        "⬇️ Exporter Cycle Report (.txt)",
+        data=_build_cycle_txt(),
+        file_name=f"cycle_report_{st.session_state.get('prospect_name', 'prospect').replace(' ', '_')}.txt",
+        mime="text/plain",
+    )
+
     prospect_name = st.session_state.get("prospect_name", "—")
     stage = st.session_state.get("stage", "input")
     research_data = st.session_state.get("research_data") or {}
