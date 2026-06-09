@@ -223,80 +223,124 @@ def _safe_text(text: str) -> str:
     return text.encode("latin-1", errors="replace").decode("latin-1")
 
 
+def _strip_md(text: str) -> str:
+    """Strip markdown bold/italic/code markers from text."""
+    import re
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"\*(.+?)\*", r"\1", text)
+    text = re.sub(r"`(.+?)`", r"\1", text)
+    return text
+
+
 def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
-    """Generate a PDF from the markdown report using fpdf2."""
+    """Generate a PDF from the markdown report using fpdf2.
+    Single-column layout, no header line, full content parity with markdown."""
     from fpdf import FPDF
 
-    PAGE_W = 180  # effective width (A4 210mm - 15mm left - 15mm right)
+    W = 175  # effective text width (A4 210mm - 18mm left - 17mm right)
 
     class PDF(FPDF):
         def header(self):
-            self.set_font("Helvetica", "B", 9)
-            self.set_text_color(100, 100, 100)
-            self.cell(PAGE_W, 8, _safe_text(f"Prospect Qualifier — {prospect_name}"), align="R")
-            self.ln(4)
-            self.set_draw_color(200, 200, 200)
-            self.line(15, self.get_y(), 195, self.get_y())
-            self.ln(3)
+            pass  # no running header
 
         def footer(self):
-            self.set_y(-15)
-            self.set_font("Helvetica", "I", 8)
+            self.set_y(-12)
+            self.set_font("Helvetica", "I", 7)
             self.set_text_color(150, 150, 150)
-            self.cell(PAGE_W, 10, f"Page {self.page_no()}", align="C")
+            self.cell(W, 8, f"Page {self.page_no()}", align="C")
 
     pdf = PDF()
-    pdf.set_auto_page_break(auto=True, margin=20)
-    pdf.set_margins(15, 20, 15)
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_margins(18, 18, 17)
     pdf.add_page()
 
-    for line in markdown_text.split("\n"):
+    def put(style: str, size: int, r: int, g: int, b: int, text: str,
+            h: float = 5.5, fill: bool = False, indent: float = 0):
+        """Render a safe, stripped line of text."""
+        safe = _safe_text(_strip_md(text))
+        if not safe.strip():
+            return
+        pdf.set_font("Helvetica", style, size)
+        pdf.set_text_color(r, g, b)
+        w = W - indent
+        if indent:
+            pdf.set_x(18 + indent)
+        if fill:
+            pdf.set_fill_color(235, 235, 235)
+        pdf.multi_cell(w, h, safe, border=0, align="L", fill=fill, new_x="LMARGIN", new_y="NEXT")
+
+    def render_table(rows: list[list[str]]):
+        """Render markdown table rows as indented text blocks."""
+        if not rows:
+            return
+        for row in rows:
+            if not row:
+                continue
+            # First cell = criterion label, rest = values
+            label = _safe_text(_strip_md(row[0]))
+            values = " | ".join(_safe_text(_strip_md(c)) for c in row[1:])
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.set_text_color(30, 30, 30)
+            pdf.set_x(18)
+            pdf.multi_cell(W, 5, label, border=0, align="L", new_x="LMARGIN", new_y="NEXT")
+            if values.strip():
+                pdf.set_font("Helvetica", "", 8)
+                pdf.set_text_color(70, 70, 70)
+                pdf.set_x(22)
+                pdf.multi_cell(W - 4, 4.5, values, border=0, align="L", new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(1)
+
+    lines = markdown_text.split("\n")
+    i = 0
+    table_rows: list[list[str]] = []
+    in_table = False
+
+    while i < len(lines):
+        line = lines[i]
         stripped = line.strip()
+        i += 1
+
+        # Detect table rows
+        if stripped.startswith("|"):
+            cells = [c.strip() for c in stripped.split("|") if c.strip()]
+            # Skip separator rows like |---|---|
+            if all(set(c) <= {"-", ":", " "} for c in cells):
+                continue
+            in_table = True
+            table_rows.append(cells)
+            continue
+        else:
+            if in_table:
+                render_table(table_rows)
+                table_rows = []
+                in_table = False
+
         if not stripped:
             pdf.ln(2)
-            continue
-        try:
-            if stripped.startswith("# "):
-                pdf.set_font("Helvetica", "B", 16)
-                pdf.set_text_color(10, 10, 10)
-                pdf.multi_cell(PAGE_W, 8, _safe_text(stripped[2:]))
-                pdf.ln(2)
-            elif stripped.startswith("## "):
-                pdf.set_font("Helvetica", "B", 12)
-                pdf.set_text_color(30, 30, 30)
-                pdf.set_fill_color(240, 240, 240)
-                pdf.multi_cell(PAGE_W, 7, _safe_text(stripped[3:]), border=0, align="L", fill=True)
-                pdf.ln(1)
-            elif stripped.startswith("### "):
-                pdf.set_font("Helvetica", "B", 10)
-                pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(PAGE_W, 6, _safe_text(stripped[4:]))
-            elif stripped.startswith("---"):
-                pdf.set_draw_color(180, 180, 180)
-                pdf.line(15, pdf.get_y(), 195, pdf.get_y())
-                pdf.ln(4)
-            elif stripped.startswith("- ") or stripped.startswith("* "):
-                pdf.set_font("Helvetica", "", 9)
-                pdf.set_text_color(60, 60, 60)
-                pdf.multi_cell(PAGE_W, 5, _safe_text("  * " + stripped[2:]))
-            elif stripped.startswith("|"):
-                cells = [c.strip() for c in stripped.split("|") if c.strip()]
-                if all(set(c) <= {"-", ":"} for c in cells):
-                    continue  # skip separator rows
-                row_text = "  |  ".join(cells[:4])
-                pdf.set_font("Courier", "", 8)
-                pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(PAGE_W, 5, _safe_text(row_text))
-            elif stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("**"):
-                pdf.set_font("Helvetica", "I", 9)
-                pdf.set_text_color(100, 100, 100)
-                pdf.multi_cell(PAGE_W, 5, _safe_text(stripped.strip("*")))
-            else:
-                pdf.set_font("Helvetica", "", 9)
-                pdf.set_text_color(50, 50, 50)
-                pdf.multi_cell(PAGE_W, 5, _safe_text(stripped))
-        except Exception:
-            pass  # skip any line that fails to render
+        elif stripped.startswith("# "):
+            put("B", 16, 10, 10, 10, stripped[2:], h=9)
+            pdf.ln(3)
+        elif stripped.startswith("## "):
+            pdf.ln(1)
+            put("B", 12, 20, 20, 20, stripped[3:], h=7, fill=True)
+            pdf.ln(2)
+        elif stripped.startswith("### "):
+            put("B", 10, 40, 40, 40, stripped[4:], h=6)
+            pdf.ln(1)
+        elif stripped.startswith("---"):
+            pdf.set_draw_color(190, 190, 190)
+            pdf.line(18, pdf.get_y(), 193, pdf.get_y())
+            pdf.ln(4)
+        elif stripped.startswith("- ") or stripped.startswith("* "):
+            put("", 9, 50, 50, 50, "  - " + stripped[2:], h=5, indent=3)
+        elif stripped.startswith("*") and stripped.endswith("*") and not stripped.startswith("**"):
+            put("I", 8, 100, 100, 100, stripped.strip("*"), h=5)
+        else:
+            put("", 9, 50, 50, 50, stripped, h=5)
+
+    # Flush any trailing table
+    if in_table and table_rows:
+        render_table(table_rows)
 
     output = pdf.output()
     if isinstance(output, bytearray):
