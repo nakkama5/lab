@@ -195,9 +195,32 @@ def generate_markdown(
 
 
 def _safe_text(text: str) -> str:
-    """Sanitize text to cp1252 (Windows-1252) for fpdf2 built-in fonts.
-    cp1252 covers all French accented chars (é, è, à, ç, ù, etc.)."""
-    return text.encode("cp1252", errors="replace").decode("cp1252")
+    """Convert text to latin-1 safe for fpdf2 built-in fonts.
+    Replaces common Unicode typographic chars with ASCII equivalents first."""
+    _REPLACEMENTS = {
+        "—": "--",   # em dash
+        "–": "-",    # en dash
+        "‘": "'",    # left single quote
+        "’": "'",    # right single quote
+        "“": '"',    # left double quote
+        "”": '"',    # right double quote
+        "…": "...",  # ellipsis
+        "•": "-",    # bullet
+        "·": "-",    # middle dot
+        "€": "EUR",  # euro sign
+        "×": "x",    # multiplication sign
+        "→": "->",   # arrow right
+        " ": " ",    # non-breaking space
+        "​": "",     # zero-width space
+        " ": " ",    # thin space
+        "°": " deg", # degree sign
+        "æ": "ae",   # æ
+        "œ": "oe",   # œ
+    }
+    for ch, repl in _REPLACEMENTS.items():
+        text = text.replace(ch, repl)
+    # Strip remaining non-latin-1 chars (emojis, etc.) with '?'
+    return text.encode("latin-1", errors="replace").decode("latin-1")
 
 
 def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
