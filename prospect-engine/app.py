@@ -70,7 +70,7 @@ input::placeholder, textarea::placeholder { color: #666 !important; }
 
 /* Buttons: gold bg, black text */
 .stButton > button, .stDownloadButton > button {
-    background: #e8d5a0 !important;
+    background: #4caf50 !important;
     color: #0a0a0a !important;
     border: none !important;
     border-radius: 20px !important;
@@ -79,7 +79,7 @@ input::placeholder, textarea::placeholder { color: #666 !important; }
     font-family: 'Inter', sans-serif !important;
 }
 .stButton > button:hover, .stDownloadButton > button:hover {
-    background: #f0e4b8 !important;
+    background: #6abf69 !important;
     color: #0a0a0a !important;
 }
 .stButton > button:disabled { opacity: 0.4 !important; }
@@ -94,14 +94,14 @@ input::placeholder, textarea::placeholder { color: #666 !important; }
 
 /* Metrics */
 [data-testid="stMetricValue"] {
-    color: #e8d5a0 !important;
+    color: #4caf50 !important;
     font-size: 2rem !important;
     font-weight: 700 !important;
 }
 [data-testid="stMetricLabel"] { color: #aaa !important; }
 
 /* Progress */
-.stProgress > div > div { background: #e8d5a0 !important; }
+.stProgress > div > div { background: #4caf50 !important; }
 [data-testid="stProgressBar"] > div { background: #1e1e1e !important; }
 
 /* Expanders */
@@ -124,10 +124,10 @@ input::placeholder, textarea::placeholder { color: #666 !important; }
     color: #888 !important;
     border-radius: 4px 4px 0 0 !important;
 }
-.stTabs [data-baseweb="tab"]:hover { color: #e8d5a0 !important; }
+.stTabs [data-baseweb="tab"]:hover { color: #4caf50 !important; }
 .stTabs [aria-selected="true"] {
-    color: #e8d5a0 !important;
-    border-bottom: 2px solid #e8d5a0 !important;
+    color: #4caf50 !important;
+    border-bottom: 2px solid #4caf50 !important;
     background: #0a0a0a !important;
 }
 .stTabs [data-baseweb="tab-panel"] { background: #0a0a0a !important; }
@@ -135,7 +135,7 @@ input::placeholder, textarea::placeholder { color: #666 !important; }
 /* Info / warning / error boxes */
 [data-testid="stAlert"], .stAlert { background: #1a1a1a !important; }
 [data-testid="stAlert"] p, [data-testid="stAlert"] span { color: #f0f0f0 !important; }
-.element-container [data-testid="stInfo"] { border-left-color: #e8d5a0 !important; }
+.element-container [data-testid="stInfo"] { border-left-color: #4caf50 !important; }
 
 /* Divider */
 hr { border-color: #222 !important; }
@@ -178,13 +178,18 @@ _init_state()
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def _reset():
-    for k in list(st.session_state.keys()):
-        if k not in ("input_name",):
-            st.session_state[k] = None
+    # Only reset app-managed keys, never widget keys (Streamlit raises if you set those)
+    app_keys = [
+        "research_data", "score_data", "report_md", "report_pdf",
+        "prospect_name", "analyst_notes", "stage",
+        "cycle_session_start", "cycle_research_start", "cycle_research_end",
+        "cycle_score_start", "cycle_score_end",
+    ]
+    for k in app_keys:
+        st.session_state[k] = None
     st.session_state["stage"] = "input"
     st.session_state["prospect_name"] = ""
     st.session_state["analyst_notes"] = ""
-    st.session_state["cycle_session_start"] = None
     st.rerun()
 
 
@@ -217,7 +222,7 @@ def _voice_input_widget(key: str, label: str = "Dicter vos notes") -> str:
     components_html = f"""
 <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:8px;">
   <button id="mic_btn_{key}" onclick="startRecognition_{key}()"
-    style="background:#e8d5a0;color:#0a0a0a;border:none;border-radius:20px;
+    style="background:#4caf50;color:#0d0d0d;border:none;border-radius:20px;
            padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px;">
     🎤 Parler
   </button>

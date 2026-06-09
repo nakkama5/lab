@@ -195,11 +195,9 @@ def generate_markdown(
 
 
 def _safe_text(text: str) -> str:
-    """Sanitize text to Latin-1 safe characters for fpdf2 built-in fonts."""
-    import unicodedata
-    # Normalize to decomposed form, then encode to latin-1 dropping unmappable chars
-    normalized = unicodedata.normalize("NFKD", text)
-    return normalized.encode("latin-1", errors="replace").decode("latin-1")
+    """Sanitize text to cp1252 (Windows-1252) for fpdf2 built-in fonts.
+    cp1252 covers all French accented chars (é, è, à, ç, ù, etc.)."""
+    return text.encode("cp1252", errors="replace").decode("cp1252")
 
 
 def generate_pdf(markdown_text: str, prospect_name: str) -> bytes:
